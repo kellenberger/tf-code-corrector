@@ -2,8 +2,8 @@
 import nltk
 import tensorflow as tf
 
-tf.app.flags.DEFINE_string("raw_data", "", "Raw data path")
-tf.app.flags.DEFINE_string("out_file", "", "File to write preprocessed data "
+tf.app.flags.DEFINE_string("raw_data", "E:\\Downloads\\movie_lines.txt", "Raw data path")
+tf.app.flags.DEFINE_string("out_file", "E:\\Documents\\dialog_corpus\\movie_lines.txt", "File to write preprocessed data "
                                            "to.")
 
 FLAGS = tf.app.flags.FLAGS
@@ -15,7 +15,7 @@ def main(_):
         for line in raw_data:
             parts = line.split(" +++$+++ ")
             dialog_line = parts[-1]
-            s = dialog_line.strip().lower().decode("utf-8", "ignore")
+            s = dialog_line.strip().lower()
             preprocessed_line = " ".join(nltk.word_tokenize(s))
             out.write(preprocessed_line + "\n")
 

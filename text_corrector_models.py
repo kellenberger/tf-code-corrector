@@ -12,6 +12,7 @@ from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import nn_ops
 
 import seq2seq
+
 from data_reader import PAD_ID, GO_ID
 
 
@@ -111,9 +112,9 @@ class TextCorrectorModel(object):
 
             output_projection = (w, b)
 
-            def sampled_loss(inputs, labels):
+            def sampled_loss(labels, logits):
                 labels = tf.reshape(labels, [-1, 1])
-                return tf.nn.sampled_softmax_loss(w_t, b, inputs, labels,
+                return tf.nn.sampled_softmax_loss(w_t, b, labels, logits,
                                                   num_samples,
                                                   self.target_vocab_size)
             softmax_loss_function = sampled_loss
@@ -167,7 +168,7 @@ class TextCorrectorModel(object):
 
         # Training outputs and losses.
         if forward_only:
-            self.outputs, self.losses = tf.contrib.seq2seq.model_with_buckets(
+            self.outputs, self.losses = seq2seq.model_with_buckets(
                 self.encoder_inputs, self.decoder_inputs, targets,
                 self.target_weights, buckets,
                 lambda x, y: seq2seq_f(x, y, True),
@@ -185,7 +186,7 @@ class TextCorrectorModel(object):
                                                      input_bias)
                         for output in self.outputs[b]]
         else:
-            self.outputs, self.losses = tf.contrib.seq2seq.model_with_buckets(
+            self.outputs, self.losses = seq2seq.model_with_buckets(
                 self.encoder_inputs, self.decoder_inputs, targets,
                 self.target_weights, buckets,
                 lambda x, y: seq2seq_f(x, y, False),
