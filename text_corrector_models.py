@@ -154,9 +154,7 @@ class TextCorrectorModel(object):
                     num_decoder_symbols=target_vocab_size,
                     embedding_size=size,
                     output_projection=output_projection,
-                    feed_previous=do_decode,
-                    loop_fn_factory=
-                    apply_input_bias_and_extract_argmax_fn_factory(input_bias))
+                    feed_previous=do_decode)
             else:
                 return seq2seq.embedding_attention_seq2seq(
                     encoder_inputs, decoder_inputs, cell,
@@ -375,7 +373,7 @@ def project_and_apply_input_bias(logits, output_projection, input_bias):
     # Apply input bias, which is a mask of shape [batch, vocab len]
     # where each token from the input in addition to all "corrective"
     # tokens are set to 1.0.
-    return tf.mul(probs, input_bias)
+    return tf.multiply(probs, input_bias)
 
 
 def apply_input_bias_and_extract_argmax_fn_factory(input_bias):
