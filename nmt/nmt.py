@@ -592,7 +592,7 @@ def run_main(flags, default_hparams, train_fn, inference_fn, target_session=""):
 
 
 def main(unused_argv):
-  default_hparams = create_hparams(FLAGS)
+  default_hparams = create_hparams(FLAGS)       # TODO: use standard_hparams_utils
   train_fn = train.train
   inference_fn = inference.inference
   run_main(FLAGS, default_hparams, train_fn, inference_fn)
