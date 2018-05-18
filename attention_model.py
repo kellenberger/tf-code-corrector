@@ -19,8 +19,8 @@ from __future__ import print_function
 
 import tensorflow as tf
 
-from . import model
-from . import model_helper
+import model
+import model_helper
 
 __all__ = ["AttentionModel"]
 

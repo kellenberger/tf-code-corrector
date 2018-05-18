@@ -25,11 +25,11 @@ import sys
 import numpy as np
 import tensorflow as tf
 
-from . import inference
-from . import train
-from .utils import evaluation_utils
-from .utils import misc_utils as utils
-from .utils import vocab_utils
+import inference
+import train
+from utils import evaluation_utils
+from utils import misc_utils as utils
+from utils import vocab_utils
 
 utils.check_tensorflow_version()
 
@@ -592,7 +592,7 @@ def run_main(flags, default_hparams, train_fn, inference_fn, target_session=""):
 
 
 def main(unused_argv):
-  default_hparams = create_hparams(FLAGS)       # TODO: use standard_hparams_utils
+  default_hparams = create_hparams(FLAGS)
   train_fn = train.train
   inference_fn = inference.inference
   run_main(FLAGS, default_hparams, train_fn, inference_fn)
