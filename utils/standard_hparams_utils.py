@@ -22,83 +22,99 @@ from __future__ import print_function
 import tensorflow as tf
 
 
-def create_standard_hparams():
-  return tf.contrib.training.HParams(
-      # Data
-      src="",
-      tgt="",
-      train_prefix="",
-      dev_prefix="",
-      test_prefix="",
-      vocab_prefix="",
-      embed_prefix="",
-      out_dir="",
+def standard_hparams():
+    return {
+        # network
+        "num_units": 32,
+        "num_layers": 2,
+        "num_encoder_layers": None,
+        "num_decoder_layers": None,
+        "encoder_type": "uni",
+        "residual": False,
+        "time_major": True,
+        "num_embeddings_partitions": 0,
 
-      # Networks
-      num_units=512,
-      num_layers=2,
-      num_encoder_layers=2,
-      num_decoder_layers=2,
-      dropout=0.2,
-      unit_type="lstm",
-      encoder_type="bi",
-      residual=False,
-      time_major=True,
-      num_embeddings_partitions=0,
+        # attention mechanisms
+        "attention": "",
+        "attention_architecture": "standard",
+        "output_attention": True,
+        "pass_hidden_state": True,
 
-      # Attention mechanisms
-      attention="scaled_luong",
-      attention_architecture="standard",
-      output_attention=True,
-      pass_hidden_state=True,
+        # optimizer
+        "optimizer": "sgd",
+        "learning_rate": 1.0,
+        "warmup_steps": 0,
+        "warmup_scheme": "t2t",
+        "decay_scheme": "",
+        "num_train_steps": 12000,
+        "colocate_gradients_with_ops": True,
 
-      # Train
-      optimizer="sgd",
-      batch_size=128,
-      init_op="uniform",
-      init_weight=0.1,
-      max_gradient_norm=5.0,
-      learning_rate=1.0,
-      warmup_steps=0,
-      warmup_scheme="t2t",
-      decay_scheme="luong234",
-      colocate_gradients_with_ops=True,
-      num_train_steps=12000,
+        # initializer
+        "init_op": "uniform",
+        "init_weight": 0.1,
 
-      # Data constraints
-      num_buckets=5,
-      max_train=0,
-      src_max_len=50,
-      tgt_max_len=50,
-      src_max_len_infer=0,
-      tgt_max_len_infer=0,
+        # data
+        "src": None,
+        "tgt": None,
+        "train_prefix": None,
+        "dev_prefix": None,
+        "test_prefix": None,
+        "out_dir": None,
 
-      # Data format
-      sos="<s>",
-      eos="</s>",
-      subword_option="",
-      check_special_token=True,
+        # Vocab
+        "vocab_prefix": None,
+        "embed_prefix": None,
+        "sos": "<s>",
+        "eos": "</s>",
+        "share_vocab": False,
+        "check_special_token": True,
 
-      # Misc
-      forget_bias=1.0,
-      num_gpus=1,
-      epoch_step=0,  # record where we were within an epoch.
-      steps_per_stats=100,
-      steps_per_external_eval=0,
-      share_vocab=False,
-      metrics=["bleu"],
-      log_device_placement=False,
-      random_seed=None,
-      # only enable beam search during inference when beam_width > 0.
-      beam_width=0,
-      length_penalty_weight=0.0,
-      override_loaded_hparams=True,
-      num_keep_ckpts=5,
-      avg_ckpts=False,
+        # Sequence lengths
+        "src_max_len": 50,
+        "tgt_max_len": 50,
+        "src_max_len_infer": None,
+        "tgt_max_len_infer": None,
 
-      # For inference
-      inference_indices=None,
-      infer_batch_size=32,
-      sampling_temperature=0.0,
-      num_translations_per_input=1,
-  )
+        # Default settings works well (rarely need to change)
+        "unit_type": "lstm",
+        "forget_bias": 1.0,
+        "dropout": 0.2,
+        "max_gradient_norm": 5.0,
+        "batch_size": 128,
+        "steps_per_stats": 100,
+        "max_train": 0,
+        "num_buckets": 5,
+
+        # SPM
+        "subword_option": "",
+
+        # Misc
+        "num_gpus": 1,
+        "log_device_placement": False,
+        "metrics": "bleu",
+        "steps_per_external_eval": None,
+        "scope": None,
+        "hparams_path": None,
+        "random_seed": None,
+        "override_loaded_hparams": False,
+        "num_keep_ckpts": 5,
+        "avg_ckpts": False,
+
+        # Inference
+        "ckpt": "",
+        "inference_input_file": None,
+        "inference_list": None,
+        "infer_batch_size": 32,
+        "inference_output_file": None,
+        "inference_ref_file": None,
+        "beam_width": 0,
+        "length_penalty_weight": 0.0,
+        "sampling_temperature": 0.0,
+        "num_translations_per_input": 1,
+
+        # Job info
+        "jobid": 0,
+        "num_workers": 1,
+        "num_inter_threads": 0,
+        "num_intra_threads": 0,
+    }
