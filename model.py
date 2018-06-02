@@ -302,6 +302,8 @@ class BaseModel(object):
       logits, sample_id, final_context_state = self._build_decoder(
           encoder_outputs, encoder_state, hparams)
 
+      ## TODO: Place Input Bias here
+
       ## Loss
       if self.mode != tf.contrib.learn.ModeKeys.INFER:
         with tf.device(model_helper.get_device_str(self.num_encoder_layers - 1,

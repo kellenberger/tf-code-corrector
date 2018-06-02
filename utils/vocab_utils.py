@@ -36,7 +36,7 @@ UNK_ID = 0
 
 def load_vocab(vocab_file):
   vocab = []
-  with codecs.getreader("utf-8")(tf.gfile.GFile(vocab_file, "rb")) as f:
+  with codecs.getreader("utf-8")(tf.gfile.GFile(vocab_file, "r")) as f:
     vocab_size = 0
     for word in f:
       vocab_size += 1
@@ -65,9 +65,9 @@ def check_vocab(vocab_file, out_dir, check_special_token=True, sos=None,
         vocab_size += 3
         new_vocab_file = os.path.join(out_dir, os.path.basename(vocab_file))
         with codecs.getwriter("utf-8")(
-            tf.gfile.GFile(new_vocab_file, "wb")) as f:
+            tf.gfile.GFile(new_vocab_file, "w")) as f:
           for word in vocab:
-            f.write("%s\r\n" % word)
+            f.write("%s\n" % word)
         vocab_file = new_vocab_file
   else:
     raise ValueError("vocab_file '%s' does not exist." % vocab_file)
