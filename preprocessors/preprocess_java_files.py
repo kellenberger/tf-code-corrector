@@ -25,10 +25,11 @@ def main(_):
         for i, project in enumerate(train_projects):
             print('Train project: {}/{}'.format(i, project_count))
             project = project.strip()
-            os.makedirs(os.path.join(FLAGS.out_directory, project))
             for subdir, _, files in os.walk(os.path.join(FLAGS.java_directory, project)):
                 for file in files:
                     if file.endswith('.java') and not file.startswith('.'):
+                        if not os.path.exists(os.path.join(FLAGS.out_directory, project)):
+                            os.makedirs(os.path.join(FLAGS.out_directory, project))
                         copyfile(os.path.join(subdir, file), os.path.join(FLAGS.out_directory, project, file))
 
     project_count = 0
@@ -41,11 +42,15 @@ def main(_):
         for i, project in enumerate(test_projects):
             print('Test project: {}/{}'.format(i, project_count))
             project = project.strip()
-            os.makedirs(os.path.join(FLAGS.out_directory, project))
             for subdir, _, files in os.walk(os.path.join(FLAGS.java_directory, project)):
                 for file in files:
                     if file.endswith('.java') and not file.startswith('.'):
+                        if not os.path.exists(os.path.join(FLAGS.out_directory, project)):
+                            os.makedirs(os.path.join(FLAGS.out_directory, project))
                         copyfile(os.path.join(subdir, file), os.path.join(FLAGS.out_directory, project, file))
+
+    copyfile(os.path.join(FLAGS.split_directory, 'trainJava.csv'), os.path.join(FLAGS.out_directory, 'trainJava.csv'))
+    copyfile(os.path.join(FLAGS.split_directory, 'testJava.csv'), os.path.join(FLAGS.out_directory, 'testJava.csv'))
 
 if __name__ == "__main__":
     tf.app.run()
