@@ -2,6 +2,7 @@
 import os
 import tensorflow as tf
 from shutil import copyfile
+import re
 
 tf.app.flags.DEFINE_string("java_directory", "", "Java directory path")
 tf.app.flags.DEFINE_string("split_directory", "", "Split dirctory path")
@@ -15,42 +16,47 @@ def main(_):
     assert FLAGS.split_directory
     assert FLAGS.out_directory
 
+    _write_files_to_new_location('trainJava.csv')
+    _write_files_to_new_location('testJava.csv')
+    
+
+def _write_files_to_new_location(source_file):
     project_count = 0
 
-    with open(os.path.join(FLAGS.split_directory, 'trainJava.csv'), 'r') as train_projects:
-        for line in train_projects:
+    with open(os.path.join(FLAGS.split_directory, source_file), 'r') as source_projects:
+        for line in source_projects:
             project_count += 1
 
-    with open(os.path.join(FLAGS.split_directory, 'trainJava.csv'), 'r') as train_projects:
-        for i, project in enumerate(train_projects):
-            print('Train project: {}/{}'.format(i, project_count))
+    with open(os.path.join(FLAGS.split_directory, source_file), 'r') as source_projects:
+        for i, project in enumerate(source_projects):
+            print('Source project: {}/{}'.format(i, project_count))
             project = project.strip()
             for subdir, _, files in os.walk(os.path.join(FLAGS.java_directory, project)):
                 for file in files:
                     if file.endswith('.java') and not file.startswith('.'):
-                        if not os.path.exists(os.path.join(FLAGS.out_directory, project)):
-                            os.makedirs(os.path.join(FLAGS.out_directory, project))
-                        copyfile(os.path.join(subdir, file), os.path.join(FLAGS.out_directory, project, file))
+                        with open(os.path.join(subdir, file), 'r') as file_data:
+                            content = file_data.read()
+                            content = _remove_comments(content).strip()
+                            if content:
+                                if not os.path.exists(os.path.join(FLAGS.out_directory, project)):
+                                    os.makedirs(os.path.join(FLAGS.out_directory, project))
+                                with open(os.path.join(FLAGS.out_directory, project, file), 'w') as new_file:
+                                    new_file.write(content)
 
-    project_count = 0
+    copyfile(os.path.join(FLAGS.split_directory, source_file), os.path.join(FLAGS.out_directory, source_file))
 
-    with open(os.path.join(FLAGS.split_directory, 'testJava.csv'), 'r') as test_projects:
-        for line in test_projects:
-            project_count += 1
-
-    with open(os.path.join(FLAGS.split_directory, 'testJava.csv'), 'r') as test_projects:
-        for i, project in enumerate(test_projects):
-            print('Test project: {}/{}'.format(i, project_count))
-            project = project.strip()
-            for subdir, _, files in os.walk(os.path.join(FLAGS.java_directory, project)):
-                for file in files:
-                    if file.endswith('.java') and not file.startswith('.'):
-                        if not os.path.exists(os.path.join(FLAGS.out_directory, project)):
-                            os.makedirs(os.path.join(FLAGS.out_directory, project))
-                        copyfile(os.path.join(subdir, file), os.path.join(FLAGS.out_directory, project, file))
-
-    copyfile(os.path.join(FLAGS.split_directory, 'trainJava.csv'), os.path.join(FLAGS.out_directory, 'trainJava.csv'))
-    copyfile(os.path.join(FLAGS.split_directory, 'testJava.csv'), os.path.join(FLAGS.out_directory, 'testJava.csv'))
+def _remove_comments(text):
+    def replacer(match):
+        s = match.group(0)
+        if s.startswith('/'):
+            return " " # note: a space and not an empty string
+        else:
+            return s
+    pattern = re.compile(
+        r'//.*?$|/\*.*?\*/|\'(?:\\.|[^\\\'])*\'|"(?:\\.|[^\\"])*"',
+        re.DOTALL | re.MULTILINE
+    )
+    return re.sub(pattern, replacer, text)
 
 if __name__ == "__main__":
     tf.app.run()
