@@ -21,6 +21,6 @@ class BatchGenerator:
 
         b = np.zeros((len(array), max_length))
         for i in range(len(array)):
-            b[i][:sequence_lengths[i]] = array[i]
+            b[i][:sequence_lengths[i]] = [ord(a) for a in array[i]]
 
         return b
