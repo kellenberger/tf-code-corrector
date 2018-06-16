@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import random
+import javalang
 
 import batch_generator
 
@@ -34,5 +35,5 @@ class JavaBatchGenerator(batch_generator.BatchGenerator):
                     selected_line = None
                     while not selected_line:
                         selected_line = random.choice(lines).strip()
-                    input_batch.append(selected_line)
-            yield input_batch
+                    input_batch.append(list(javalang.tokenizer.tokenize(selected_line)))
+            yield self.pad_array_with_zeros(input_batch)

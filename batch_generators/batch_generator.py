@@ -1,6 +1,17 @@
+"""Base Class for batch generators"""
+
+import numpy as np
+
 class BatchGenerator:
 
-    def pad_array_with_zeros(array):
+    def pad_array_with_zeros(self, array):
+        """
+        Args:
+            array: a 2D-array of shape (n,)
+        Returns:
+            An array of shape (n, max_length) where:
+                max_length: length of the longest array in a
+        """
         max_length = 0
         sequence_lengths = []
         for l in array:
