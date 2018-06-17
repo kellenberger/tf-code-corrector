@@ -38,12 +38,21 @@ class JavaBatchGenerator(batch_generator.BatchGenerator):
                         selected_line = random.choice(lines).strip()
                     selected_lines.append(selected_line)
 
+            target_batch = [[ char for char in line[::-1]] for line in selected_lines]
+            target_batch, target_sequence_lengths = self._pad_char_array(target_batch)
+            target_batch = self._unpack_bits(target_batch)
+
             input_batch = []
             for line in selected_lines:
                 char_array = [char for char in line]
-                if len(line) >= 1 and random.random() > 0.9:
-                    drop_char = random.randint(0, len(line))
+                if len(char_array) >= 1 and random.random() > 0.9:
+                    drop_char = random.randint(0, len(char_array))
+                    if(drop_char >= len(char_array)):
+                        print(drop_char)
+                        print(char_array)
                     del char_array[drop_char]
-                input_batch.append(char_array)
-            padded_array = self._pad_char_array(input_batch)
-            yield self._unpack_bits(padded_array)
+                input_batch.append(char_array[::-1])
+            input_batch, input_sequence_lengths = self._pad_char_array(input_batch)
+            input_batch = self._unpack_bits(input_batch)
+
+            yield input_batch, input_sequence_lengths, target_batch, target_sequence_lengths
