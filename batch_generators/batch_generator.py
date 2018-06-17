@@ -4,14 +4,17 @@ import numpy as np
 
 class BatchGenerator:
 
-    def pad_array_with_zeros(self, array):
+    def _pad_char_array(self, array):
         """
         Args:
             array: a 2D-array of shape (n,)
         Returns:
-            An array of shape (n, max_length) where:
+            An array of shape (n, max_length, 1) where:
                 max_length: length of the longest array in a
+                shorter arrays are pre-padded
         """
+        pad_code = 128           # padding symbol
+
         max_length = 0
         sequence_lengths = []
         for l in array:
@@ -19,8 +22,20 @@ class BatchGenerator:
             if len(l) > max_length:
                 max_length = len(l)
 
-        b = np.zeros((len(array), max_length))
+        b = np.empty((len(array), max_length, 1), dtype='>u2')
+        b.fill(pad_code)
         for i in range(len(array)):
-            b[i][:sequence_lengths[i]] = [ord(a) for a in array[i]]
+            b[i][-sequence_lengths[i]:] = [[ord(a)] for a in array[i]]
 
         return b
+
+    def _unpack_bits(self, array):
+        """
+        Args:
+            array: a 3D-array of shape (n, m, 1)
+        Returns:
+            An array of shape (n, m, x) where all entries of the argument
+            are unpacked into a bit array and:
+                x: number of bits needed to represent array.dtype
+        """
+        return np.unpackbits(array.view('uint8'), axis=2)

@@ -1,3 +1,4 @@
+"""Batch Generator for the Java Github Corpus"""
 import numpy as np
 import os
 import random
@@ -32,8 +33,8 @@ class JavaBatchGenerator(batch_generator.BatchGenerator):
                 file = random.choice(os.listdir(os.path.join(self.data_directory, random_project)))
                 with open(os.path.join(self.data_directory, random_project, file), 'r') as random_file:
                     lines = random_file.read().split("\n")
-                    selected_line = None
-                    while not selected_line:
+                    selected_line = ''
+                    while len(selected_line) == 0:
                         selected_line = random.choice(lines).strip()
                     selected_lines.append(selected_line)
 
@@ -44,4 +45,5 @@ class JavaBatchGenerator(batch_generator.BatchGenerator):
                     drop_char = random.randint(0, len(line))
                     del char_array[drop_char]
                 input_batch.append(char_array)
-            yield self.pad_array_with_zeros(input_batch)
+            padded_array = self._pad_char_array(input_batch)
+            yield self._unpack_bits(padded_array)

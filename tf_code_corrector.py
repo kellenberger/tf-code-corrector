@@ -12,8 +12,8 @@ tf.app.flags.DEFINE_integer("num_units", 256, "Number of units in each layer")
 FLAGS = tf.app.flags.FLAGS
 
 def main(_):
-    input = tf.placeholder(tf.float32, shape=(FLAGS.batch_size, None), name='input')
-    target = tf.placeholder(tf.float32, shape=(FLAGS.batch_size, None), name='target')
+    input = tf.placeholder(tf.float32, shape=(FLAGS.batch_size, None, 16), name='input')
+    target = tf.placeholder(tf.float32, shape=(FLAGS.batch_size, None, 16), name='target')
 
     if FLAGS.batch_generator == "Java":
         batch_generator = JavaBatchGenerator(FLAGS.data_directory)
