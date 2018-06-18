@@ -12,8 +12,21 @@ tf.app.flags.DEFINE_integer("num_units", 256, "Number of units in each layer")
 FLAGS = tf.app.flags.FLAGS
 
 def main(_):
-    input = tf.placeholder(tf.float32, shape=(FLAGS.batch_size, None, 16), name='input')
-    target = tf.placeholder(tf.float32, shape=(FLAGS.batch_size, None, 16), name='target')
+    encoder_input = tf.placeholder(tf.int32, shape=(FLAGS.batch_size, None, 1), name='encoder_input')
+    sequence_lengths = tf.placeholder(tf.int32, shape=(FLAGS.batch_size), name='sequence_lengths')
+    decoder_input = tf.placeholder(tf.int32, shape=(FLAGS.batch_size, None, 1), name='decoder_input')
+    target_output = tf.placeholder(tf.int32, shape=(FLAGS.batch_size, None, 1), name='target_output')
+    target_lengths = tf.placeholder(tf.int32, shape=(FLAGS.batch_size), name="target_lengths")
+
+    pad_code = tf.constant(128, dtype = tf.int32)
+
+    target_weights = tf.to_int32(tf.map_fn(
+                                    lambda x: tf.map_fn(
+                                                lambda y: tf.logical_not(tf.equal(y, pad_code)),
+                                                x,
+                                                dtype=tf.bool),
+                                    target_output,
+                                    dtype= tf.bool))
 
     if FLAGS.batch_generator == "Java":
         batch_generator = JavaBatchGenerator(FLAGS.data_directory)
@@ -23,11 +36,27 @@ def main(_):
         raise ValueError("batch_generator argument not recognized; must be one of: "
                          "Java, Text")
 
-    rnn_layers = [tf.nn.rnn_cell.LSTMCell(FLAGS.num_units) for i in range(FLAGS.num_layers)]
-    multi_rnn_cell = tf.nn.rnn_cell.MultiRNNCell(rnn_layers)
-    encoder_outputs, encoder_state = tf.nn.dynamic_rnn(cell = multi_rnn_cell,
-                                                        inputs = input,
+    projection_layer = tf.layers.Dense(256, use_bias = False) # 256 characters can be represented in UTF-8
+
+    encoder_layers = [tf.nn.rnn_cell.LSTMCell(FLAGS.num_units) for i in range(FLAGS.num_layers)]
+    encoder_cell = tf.nn.rnn_cell.MultiRNNCell(encoder_layers)
+    encoder_outputs, encoder_state = tf.nn.dynamic_rnn(cell = encoder_cell,
+                                                        inputs = tf.to_float(encoder_input),
+                                                        sequence_length = sequence_lengths,
                                                         dtype = tf.float32)
+
+    decoder_layers = [tf.nn.rnn_cell.LSTMCell(FLAGS.num_units) for i in range(FLAGS.num_layers)]
+    decoder_cell = tf.nn.rnn_cell.MultiRNNCell(decoder_layers)
+    helper = tf.contrib.seq2seq.TrainingHelper(tf.to_float(decoder_input), target_lengths)
+    decoder = tf.contrib.seq2seq.BasicDecoder(
+        decoder_cell, helper, encoder_state,
+        output_layer=projection_layer)
+    outputs, _, _ = tf.contrib.seq2seq.dynamic_decode(decoder)
+    logits = outputs.rnn_output
+
+    crossent = tf.nn.sparse_softmax_cross_entropy_with_logits(
+        labels=tf.to_float(target_output), logits=logits)
+    train_loss = (tf.reduce_sum(crossent * target_weights) / FLAGS.batch_size)
 
 if __name__ == "__main__":
     tf.app.run()

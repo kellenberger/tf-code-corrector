@@ -22,9 +22,14 @@ class JavaBatchGenerator(batch_generator.BatchGenerator):
         Args:
             batch_size: Size of the batch_size
         Returns:
-            A tuple of the form (input_batch, target_batch), where:
+            A tuple of the form (input_batch, input_sequence_lengths,
+            target_batch, target_sequence_lengths), where:
                 input_batch: batch of input sequences
+                input_sequence_lengths: array containing the lengths of
+                    the input sequences
                 target_batch: batch of respective target sequences
+                target_sequence_lengths: array containing the lengths of
+                    the target sequences
         """
         while True:
             selected_lines = []
@@ -36,7 +41,7 @@ class JavaBatchGenerator(batch_generator.BatchGenerator):
                     selected_line = ''
                     while len(selected_line) == 0:
                         selected_line = random.choice(lines).strip()
-                    selected_lines.append(selected_line)
+                    selected_lines.append(selected_line.encode('utf-8'))
 
             target_batch = [[ char for char in line[::-1]] for line in selected_lines]
             target_batch, target_sequence_lengths = self._pad_char_array(target_batch)
@@ -49,7 +54,7 @@ class JavaBatchGenerator(batch_generator.BatchGenerator):
                     drop_char = random.randint(0, len(char_array))
                     if(drop_char >= len(char_array)):
                         print(drop_char)
-                        print(char_array)
+                        print(char_array    )
                     del char_array[drop_char]
                 input_batch.append(char_array[::-1])
             input_batch, input_sequence_lengths = self._pad_char_array(input_batch)

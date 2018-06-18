@@ -22,7 +22,7 @@ class BatchGenerator:
             if len(l) > max_length:
                 max_length = len(l)
 
-        b = np.empty((len(array), max_length, 1), dtype='uint16')
+        b = np.empty((len(array), max_length, 1), dtype='int32')
         b.fill(pad_code)
         for i in range(len(array)):
             b[i][-sequence_lengths[i]:] = [[ord(a)] for a in array[i]]
@@ -38,4 +38,4 @@ class BatchGenerator:
             are unpacked into a bit array and:
                 x: number of bits needed to represent array.dtype
         """
-        return np.unpackbits(array.view('uint8'), axis=2)
+        return np.unpackbits(array, axis=2)
