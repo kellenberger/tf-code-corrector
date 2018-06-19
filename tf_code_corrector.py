@@ -8,6 +8,8 @@ tf.app.flags.DEFINE_string("batch_generator", "Java", "Batch Generator which is 
 tf.app.flags.DEFINE_integer("batch_size", 128, "Bath size for training input")
 tf.app.flags.DEFINE_integer("num_layers", 2, "Number of layers of the network")
 tf.app.flags.DEFINE_integer("num_units", 256, "Number of units in each layer")
+tf.app.flags.DEFINE_float("max_gradient_norm", 5.0, "Clip gradients to this norm")
+tf.app.flags.DEFINE_float("learning_rate", 0.001, "Learning rate for the optimizer")
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -15,12 +17,12 @@ def main(_):
     encoder_input = tf.placeholder(tf.int32, shape=(FLAGS.batch_size, None, 1), name='encoder_input')
     sequence_lengths = tf.placeholder(tf.int32, shape=(FLAGS.batch_size), name='sequence_lengths')
     decoder_input = tf.placeholder(tf.int32, shape=(FLAGS.batch_size, None, 1), name='decoder_input')
-    target_output = tf.placeholder(tf.int32, shape=(FLAGS.batch_size, None, 1), name='target_output')
+    target_output = tf.placeholder(tf.int32, shape=(FLAGS.batch_size, None), name='target_output')
     target_lengths = tf.placeholder(tf.int32, shape=(FLAGS.batch_size), name="target_lengths")
 
     pad_code = tf.constant(128, dtype = tf.int32)
 
-    target_weights = tf.to_int32(tf.map_fn(
+    target_weights = tf.to_float(tf.map_fn(
                                     lambda x: tf.map_fn(
                                                 lambda y: tf.logical_not(tf.equal(y, pad_code)),
                                                 x,
@@ -55,8 +57,19 @@ def main(_):
     logits = outputs.rnn_output
 
     crossent = tf.nn.sparse_softmax_cross_entropy_with_logits(
-        labels=tf.to_float(target_output), logits=logits)
+        labels=target_output, logits=logits)
     train_loss = (tf.reduce_sum(crossent * target_weights) / FLAGS.batch_size)
+
+    train_perplexity = tf.exp(tain_loss)
+
+    params = tf.trainable_variables()
+    gradients = tf.gradients(train_loss, params)
+    clipped_gradients, _ = tf.clip_by_global_norm(
+        gradients, FLAGS.max_gradient_norm)
+
+    optimizer = tf.train.AdamOptimizer(FLAGS.learning_rate)
+    update_step = optimizer.apply_gradients(
+        zip(clipped_gradients, params))
 
 if __name__ == "__main__":
     tf.app.run()
