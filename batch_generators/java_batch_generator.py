@@ -41,23 +41,21 @@ class JavaBatchGenerator(batch_generator.BatchGenerator):
                     selected_line = ''
                     while len(selected_line) == 0:
                         selected_line = random.choice(lines).strip()
-                    selected_lines.append(selected_line.encode('utf-8'))
+                    selected_lines.append(selected_line)
 
-            target_batch = [[ char for char in line[::-1]] for line in selected_lines]
-            target_batch, target_sequence_lengths = self._pad_char_array(target_batch)
-            target_batch = self._unpack_bits(target_batch)
+            target_batch = [[ char for char in line] for line in selected_lines]
+            target_input_batch, target_output_batch, target_sequence_lengths = self._pad_output_array(target_batch)
 
             input_batch = []
             for line in selected_lines:
                 char_array = [char for char in line]
-                if len(char_array) >= 1 and random.random() > 0.9:
-                    drop_char = random.randint(0, len(char_array))
+                if len(char_array) > 1 and random.random() > 0.9:
+                    drop_char = random.randint(0, len(char_array)-1)
                     if(drop_char >= len(char_array)):
                         print(drop_char)
                         print(char_array    )
                     del char_array[drop_char]
                 input_batch.append(char_array[::-1])
-            input_batch, input_sequence_lengths = self._pad_char_array(input_batch)
-            input_batch = self._unpack_bits(input_batch)
+            input_batch, input_sequence_lengths = self._pad_input_array(input_batch)
 
-            yield input_batch, input_sequence_lengths, target_batch, target_sequence_lengths
+            yield input_batch, input_sequence_lengths, target_input_batch, target_output_batch, target_sequence_lengths
