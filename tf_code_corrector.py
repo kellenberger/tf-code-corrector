@@ -39,11 +39,10 @@ def main(_):
 
       train_model.train(train_sess, i)
 
-      # if i % FLAGS.eval_steps == 0:
-      #   checkpoint_path = train_model.saver.save(train_sess, FLAGS.output_directory, global_step=i)
-      #   eval_model.saver.restore(eval_sess, checkpoint_path)
-      #   while data_to_eval:
-      #     eval_model.eval(eval_sess)
+      if i % FLAGS.eval_steps == 0:
+        checkpoint_path = train_model.saver.save(train_sess, FLAGS.output_directory, global_step=i)
+        eval_model.saver.restore(eval_sess, checkpoint_path)
+        eval_model.eval(eval_sess)
 
 
 if __name__ == "__main__":

@@ -14,7 +14,7 @@ class EvaluationModel:
         target_lengths = tf.placeholder(tf.int32, shape=(FLAGS.batch_size), name="target_lengths")
 
         if FLAGS.batch_generator == "Java":
-            self.batch_generator = JavaBatchGenerator(FLAGS.data_directory)
+            self.batch_generator = JavaBatchGenerator(FLAGS.data_directory).train_batch_generator(FLAGS.batch_size)
         elif FLAGS.batch_generator == "Text":
             raise NotImplementedError("TextBatchGenerator is not implemented yet")
         else:
@@ -50,10 +50,33 @@ class EvaluationModel:
             decoder_cell, helper, encoder_state,
             output_layer=projection_layer)
         # Dynamic decoding
-        outputs, _, _ = tf.contrib.seq2seq.dynamic_decode(decoder)
+        maximum_iterations = tf.round(tf.reduce_max(sequence_lengths) * 2)
+        outputs, _, _ = tf.contrib.seq2seq.dynamic_decode(decoder, maximum_iterations = maximum_iterations)
         self.translations = outputs.sample_id
+
+        self.encoder_input = encoder_input
+        self.sequence_lengths = sequence_lengths
+        self.decoder_input = decoder_input
+        self.target_output = target_output
+        self.target_lengths = target_lengths
 
         self.saver = tf.train.Saver()
 
     def eval(self, session):
-        session.run(self.translations)
+        encoder_input, sequence_lengths, decoder_input, target_output, target_lengths = self.batch_generator.next()
+        translations = session.run(self.translations,
+                            feed_dict = {
+                                self.encoder_input: encoder_input,
+                                self.sequence_lengths: sequence_lengths,
+                                self.decoder_input: decoder_input,
+                                self.target_output: target_output,
+                                self.target_lengths: target_lengths
+                            })
+        s = ''
+        for c in target_output[0]:
+            s += chr(c)
+        print("Target: {}".format(s))
+        s = ''
+        for c in translations[0]:
+            s += chr(c)
+        print("Actual: {}".format(s))
