@@ -18,7 +18,7 @@ def main(_):
 
     _write_files_to_new_location('trainJava.csv')
     _write_files_to_new_location('testJava.csv')
-    
+
 
 def _write_files_to_new_location(source_file):
     project_count = 0
@@ -31,18 +31,16 @@ def _write_files_to_new_location(source_file):
         for i, project in enumerate(source_projects):
             print('Source project: {}/{}'.format(i, project_count))
             project = project.strip()
-            for subdir, _, files in os.walk(os.path.join(FLAGS.java_directory, project)):
-                for file in files:
-                    if file.endswith('.java') and not file.startswith('.'):
-                        with open(os.path.join(subdir, file), 'r') as file_data:
-                            content = file_data.read()
-                            content = _remove_comments(content).strip()
-                            if content:
-                                if not os.path.exists(os.path.join(FLAGS.out_directory, project)):
-                                    os.makedirs(os.path.join(FLAGS.out_directory, project))
-                                with open(os.path.join(FLAGS.out_directory, project, file), 'w') as new_file:
-                                    new_file.write(content)
-
+            with open(os.path.join(FLAGS.out_directory, project + '.java'), 'w') as project_file:
+                for subdir, _, files in os.walk(os.path.join(FLAGS.java_directory, project)):
+                    for file in files:
+                        if file.endswith('.java') and not file.startswith('.'):
+                            with open(os.path.join(subdir, file), 'r') as file_data:
+                                content = file_data.read()
+                                content = _remove_comments(content).strip()
+                                if content:
+                                    project_file.write(content)
+                                    project_file.write("\n\n")
     copyfile(os.path.join(FLAGS.split_directory, source_file), os.path.join(FLAGS.out_directory, source_file))
 
 def _remove_comments(text):
