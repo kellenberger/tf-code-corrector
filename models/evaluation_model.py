@@ -60,11 +60,12 @@ class EvaluationModel:
 
     def eval(self, session):
         translations, target = session.run([self.translations, self.target_output])
-        s = ''
-        for c in target[0]:
-            s += chr(c)
-        print("Target: {}".format(s))
-        s = ''
-        for c in translations[0]:
-            s += chr(c)
-        print("Actual: {}".format(s))
+        for i in range(10):
+            s = ''
+            for c in target[i]:
+                s += chr(c)
+            print("Target: {}".format(s))
+            s = ''
+            for c in translations[i]:
+                s += chr(c)
+            print("Actual: {}".format(s))
