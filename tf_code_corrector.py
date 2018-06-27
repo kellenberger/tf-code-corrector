@@ -3,6 +3,8 @@ import tensorflow as tf
 import numpy as np
 import random
 import os
+import time
+import json
 
 from models.train_model import TrainModel
 from models.evaluation_model import EvaluationModel
@@ -24,8 +26,12 @@ tf.app.flags.DEFINE_float("learning_rate", 0.001, "Learning rate for the optimiz
 FLAGS = tf.app.flags.FLAGS
 
 def main(_):
-    if not os.path.exists(FLAGS.output_directory):
-        os.makedirs(FLAGS.output_directory)
+    timestamp = datetime.datetime.fromtimestamp(time.time()).strftime("%Y%m%d%H%M%S/")
+    FLAGS.output_directory = os.path.join(FLAGS.output_directory, timestamp)
+    os.makedirs(FLAGS.output_directory)
+
+    with open(os.path.join(FLAGS.output_directory, 'hparams.json'), 'w') as hparam:
+        json.dump(FLAGS.flag_values_dict(), hparam)
 
     train_graph = tf.Graph()
     eval_graph = tf.Graph()
