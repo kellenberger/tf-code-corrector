@@ -1,5 +1,6 @@
 """Evaluation Model"""
 import tensorflow as tf
+import sys
 
 from batch_generators.java_batch_generator import JavaBatchGenerator
 
@@ -8,7 +9,6 @@ class EvaluationModel:
     def __init__(self, FLAGS, iterator):
 
         encoder_input, sequence_lengths, decoder_input, target_output, target_lengths = iterator.get_next()
-        encoder_input = tf.reverse(encoder_input, [1])
         sequence_lengths = tf.reshape(sequence_lengths, [FLAGS.batch_size])
         target_lengths = tf.reshape(target_lengths, [FLAGS.batch_size])
 
@@ -54,13 +54,18 @@ class EvaluationModel:
         outputs, _, _ = tf.contrib.seq2seq.dynamic_decode(decoder, maximum_iterations = maximum_iterations)
         self.translations = outputs.sample_id
 
+        self.encoder_input = encoder_input
         self.target_output = target_output
 
         self.saver = tf.train.Saver()
 
     def eval(self, session):
-        translations, target = session.run([self.translations, self.target_output])
-        for i in range(10):
+        translations, target, input = session.run([self.translations, self.target_output, self.encoder_input])
+        for i in range(5):
+            s = ''
+            for c in input[i]:
+                s+= chr(c)
+            print("Source: {}".format(s))
             s = ''
             for c in target[i]:
                 s += chr(c)
@@ -69,3 +74,4 @@ class EvaluationModel:
             for c in translations[i]:
                 s += chr(c)
             print("Actual: {}".format(s))
+        sys.stdout.flush()

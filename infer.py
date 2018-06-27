@@ -9,6 +9,7 @@ from models.evaluation_model import EvaluationModel
 
 tf.app.flags.DEFINE_string("data_directory", "", "Directory of the data set")
 tf.app.flags.DEFINE_string("output_directory", "", "Output directory for checkpoints and tests")
+tf.app.flags.DEFINE_string("checkpoint_path", "", "Path to checkpoint")
 tf.app.flags.DEFINE_integer("max_sequence_length", 200, "Max length of input sequence")
 tf.app.flags.DEFINE_integer("pad_id", 128, "Code of padding character")
 tf.app.flags.DEFINE_integer("sos_id", 2, "Code of start-of-sequence character")
@@ -24,48 +25,24 @@ tf.app.flags.DEFINE_float("learning_rate", 0.001, "Learning rate for the optimiz
 FLAGS = tf.app.flags.FLAGS
 
 def main(_):
-    if not os.path.exists(FLAGS.output_directory):
-        os.makedirs(FLAGS.output_directory)
+    infer_graph = tf.Graph()
 
-    train_graph = tf.Graph()
-    eval_graph = tf.Graph()
+    with infer_graph.as_default():
+        infer_iterator, infer_file = create_iterator()
+        infer_model = EvaluationModel(FLAGS, infer_iterator)
 
-    with train_graph.as_default():
-        train_iterator, train_file = create_iterator()
-        train_model = TrainModel(FLAGS, train_iterator)
-        initializer = tf.global_variables_initializer()
+    infer_sess = tf.Session(graph=infer_graph)
 
-    with eval_graph.as_default():
-        eval_iterator, eval_file = create_iterator()
-        eval_model = EvaluationModel(FLAGS, eval_iterator)
+    initialize_iterator(infer_iterator, infer_file, 'testJava.csv', infer_sess)
+    infer_model.saver.restore(infer_sess, FLAGS.checkpoint_path)
 
-    train_sess = tf.Session(graph=train_graph)
-    eval_sess = tf.Session(graph=eval_graph)
-
-    train_sess.run(initializer)
-    initialize_iterator(train_iterator, train_file, 'trainJava.csv', train_sess)
-    initialize_iterator(eval_iterator, eval_file, 'testJava.csv', eval_sess)
-
-    for i in range(FLAGS.num_iterations):
-        trained = False
-        while(not trained):
-            try:
-                train_model.train(train_sess, i+1)
-                trained = True
-            except tf.errors.OutOfRangeError:
-                initialize_iterator(train_iterator, train_file, 'trainJava.csv', train_sess)
-
-
-        if (i+1) % FLAGS.eval_steps == 0:
-            checkpoint_path = train_model.saver.save(train_sess, FLAGS.output_directory, global_step=i+1)
-            eval_model.saver.restore(eval_sess, checkpoint_path)
-            evaluated = False
-            while(not evaluated):
-                try:
-                    eval_model.eval(eval_sess)
-                    evaluated = True
-                except tf.errors.OutOfRangeError:
-                    initialize_iterator(eval_iterator, eval_file, 'testJava.csv', eval_sess)
+    infered = False
+    while(not infered):
+        try:
+            infer_model.eval(infer_sess)
+            infered = True
+        except tf.errors.OutOfRangeError:
+            initialize_iterator(infer_iterator, infer_file, 'testJava.csv', infer_sess)
 
 
 def initialize_iterator(iterator, file_placeholder, projects_file, sess):
@@ -80,34 +57,16 @@ def create_iterator():
     java_file = tf.placeholder(tf.string, shape=[])
 
     def map_function(line):
-        def transform_string(s):
-            s = s.strip()
-            if random.random() > 0.9 and len(s) > 1:
-                brackets = ['(', ')', '[', ']', '{', '}']
-                bracket_indices = [i for i, c in enumerate(s) if c in brackets]
-                if bracket_indices:
-                    drop_index = random.choice(bracket_indices)
-                    s = s[:drop_index] + s[drop_index+1:]
-            if random.random() > 0.9 and len(s) > 1:
-                semicolon_indices = [i for i, c in enumerate(s) if c == ';']
-                if semicolon_indices:
-                    drop_index = random.choice(semicolon_indices)
-                    s = s[:drop_index] + s[drop_index+1:]
-            if random.random() > 0.9 and len(s) > 1:
-                change_char = random.randint(0, len(s)-2)
-                s = s[:change_char] + s[change_char+1] + s[change_char] + s[change_char+2:]
-            return s
-
         t = tf.py_func(lambda string: string.strip(), [line], tf.string)
         t = tf.map_fn(lambda elem:
                 tf.py_func(lambda char: np.array(ord(char), dtype=np.int32), [elem], tf.int32), tf.string_split([t], '').values, tf.int32)
         dec_inp = tf.concat([[FLAGS.sos_id], t], 0)
         dec_out = tf.concat([t, [FLAGS.eos_id]], 0)
+        def drop_c():
+            drop_char = tf.random_uniform([1], minval = 0, maxval = tf.size(t), dtype=tf.int32)
+            return tf.concat([tf.slice(t, [0], drop_char), tf.slice(t, drop_char+1, tf.subtract(tf.size(t), drop_char+1))], 0)
 
-        enc_inp = t = tf.py_func(transform_string, [line], tf.string)
-        enc_inp = tf.map_fn(lambda elem:
-                tf.py_func(lambda char: np.array(ord(char), dtype=np.int32), [elem], tf.int32), tf.string_split([enc_inp], '').values, tf.int32)
-
+        enc_inp = tf.cond(tf.logical_and(tf.random_uniform([]) > 0.9, tf.size(t) > 1), drop_c, lambda: t)
         return enc_inp, tf.expand_dims(tf.size(enc_inp), 0), dec_inp, dec_out, tf.expand_dims(tf.size(dec_inp),0)
 
 

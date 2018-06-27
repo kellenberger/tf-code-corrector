@@ -1,6 +1,7 @@
 """Train Model"""
 import tensorflow as tf
 import time
+import sys
 
 from batch_generators.java_batch_generator import JavaBatchGenerator
 
@@ -9,7 +10,6 @@ class TrainModel:
     def __init__(self, FLAGS, iterator):
 
         encoder_input, sequence_lengths, decoder_input, target_output, target_lengths = iterator.get_next()
-        encoder_input = tf.reverse(encoder_input, [1])
         sequence_lengths = tf.reshape(sequence_lengths, [FLAGS.batch_size])
         target_lengths = tf.reshape(target_lengths, [FLAGS.batch_size])
 
@@ -75,9 +75,14 @@ class TrainModel:
         self.train_loss = train_loss
 
         self.saver = tf.train.Saver()
+        self.start_time = None
 
     def train(self, session, i):
-        start_time = time.time()
+        if not self.start_time:
+            self.start_time = time.time()
         _, loss = session.run([self.update_step, self.train_loss])
-        end_time = time.time()
-        print("iteration {}, loss: {:.2f}, seconds: {:.2f}".format(i, loss, end_time - start_time))
+        if i % 100 == 0:
+            end_time = time.time()
+            print("iteration {}, loss: {:.2f}, minutes: {:.2f}".format(i, loss, (end_time - self.start_time)/60))
+            sys.stdout.flush()
+            self.start_time = None
