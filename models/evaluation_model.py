@@ -75,3 +75,4 @@ class EvaluationModel:
                 s += chr(c)
             print("Actual: {}".format(s))
         sys.stdout.flush()
+        return translations

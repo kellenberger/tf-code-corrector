@@ -1,6 +1,8 @@
 """Creates a test file for each introduced error"""
 import os
 import random
+import tensorflow as tf
+import sys
 
 tf.app.flags.DEFINE_string("java_directory", "", "Java directory path")
 tf.app.flags.DEFINE_integer("max_sequence_length", 100, "Maximal length for "
@@ -48,10 +50,14 @@ def create_test_file(dir, file_name, project_files, pertubation_fn):
     with open(os.path.join(dir, file_name + '.src'), 'w') as source_file, \
             open(os.path.join(dir, file_name + '.tgt'), 'w') as target_file:
         for project in project_files:
+            print("Line Count: {}".format(line_count))
+            sys.stdout.flush()
             if line_count == FLAGS.lines_per_file:
                 break
-            with(open(project, 'r') as project_data:
+            with open(project, 'r') as project_data:
                 lines = project_data.readlines()
+                if len(lines) < 100:
+                    continue
                 random_lines = random.sample(lines, 100)
                 for line in random_lines:
                     if line_count == FLAGS.lines_per_file:
@@ -74,9 +80,13 @@ def main(_):
         for project in source_projects:
             test_projects.append(os.path.join(FLAGS.java_directory, project.strip() + '.java'))
 
+    print('Create Typos')
     create_test_file(test_directory, 'typos', test_projects, add_typo)
+    print('Create Brackets')
     create_test_file(test_directory, 'brackets', test_projects, remove_bracket)
+    print('Create Semicolon')
     create_test_file(test_directory, 'semicolon', test_projects, remove_semicolon)
+    print('Create Unperturbed')
     create_test_file(test_directory, 'unperturbed', test_projects, do_nothing)
 
 if __name__ == "__main__":
