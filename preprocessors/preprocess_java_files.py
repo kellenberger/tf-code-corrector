@@ -16,11 +16,11 @@ def main(_):
     assert FLAGS.split_directory
     assert FLAGS.out_directory
 
-    _write_files_to_new_location('trainJava.csv')
-    _write_files_to_new_location('testJava.csv')
+    _write_files_to_new_location('trainJava.csv', 'train_')
+    _write_files_to_new_location('testJava.csv', 'test_')
 
 
-def _write_files_to_new_location(source_file):
+def _write_files_to_new_location(source_file, output_name):
     project_count = 0
 
     with open(os.path.join(FLAGS.split_directory, source_file), 'r') as source_projects:
@@ -28,20 +28,28 @@ def _write_files_to_new_location(source_file):
             project_count += 1
 
     with open(os.path.join(FLAGS.split_directory, source_file), 'r') as source_projects:
+        file_count = 0
+        char_count = 0
+        output_file = open(os.path.join(FLAGS.out_directory, output_name + str(file_count) + '.java'), 'w')
         for i, project in enumerate(source_projects):
             print('Source project: {}/{}'.format(i, project_count))
             project = project.strip()
-            with open(os.path.join(FLAGS.out_directory, project + '.java'), 'w') as project_file:
-                for subdir, _, files in os.walk(os.path.join(FLAGS.java_directory, project)):
-                    for file in files:
-                        if file.endswith('.java') and not file.startswith('.'):
-                            with open(os.path.join(subdir, file), 'r') as file_data:
-                                content = file_data.read()
-                                content = _remove_comments(content).strip()
-                                if content:
-                                    project_file.write(content)
-                                    project_file.write("\n\n")
-    copyfile(os.path.join(FLAGS.split_directory, source_file), os.path.join(FLAGS.out_directory, source_file))
+            for subdir, _, files in os.walk(os.path.join(FLAGS.java_directory, project)):
+                for file in files:
+                    if file.endswith('.java') and not file.startswith('.'):
+                        with open(os.path.join(subdir, file), 'r') as file_data:
+                            content = file_data.read()
+                            content = _remove_comments(content).strip()
+                            content = re.sub('\s+', ' ', content)
+                            if content:
+                                output_file.write(content)
+                                output_file.write("\n")
+                                char_count += len(content)
+                                if char_count >= 100000000:  # ~ File size 100MB
+                                    file_count += 1
+                                    char_count = 0
+                                    output_file.close()
+                                    output_file = open(os.path.join(FLAGS.out_directory, output_name + str(file_count) + '.java'), 'w')
 
 def _remove_comments(text):
     def replacer(match):
