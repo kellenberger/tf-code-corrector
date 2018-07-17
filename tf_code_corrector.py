@@ -8,6 +8,7 @@ import json
 
 from models.train_model import TrainModel
 from models.evaluation_model import EvaluationModel
+from corruptors import java_corruptor
 
 tf.app.flags.DEFINE_string("data_directory", "", "Directory of the data set")
 tf.app.flags.DEFINE_string("output_directory", "", "Output directory for checkpoints and tests")
@@ -86,31 +87,13 @@ def create_iterator():
     java_file = tf.placeholder(tf.string, shape=[])
 
     def map_function(line):
-        def transform_string(s):
-            s = s.strip()
-            if random.random() > 0.9 and len(s) > 1:
-                brackets = ['(', ')', '[', ']', '{', '}']
-                bracket_indices = [i for i, c in enumerate(s) if c in brackets]
-                if bracket_indices:
-                    drop_index = random.choice(bracket_indices)
-                    s = s[:drop_index] + s[drop_index+1:]
-            if random.random() > 0.9 and len(s) > 1:
-                semicolon_indices = [i for i, c in enumerate(s) if c == ';']
-                if semicolon_indices:
-                    drop_index = random.choice(semicolon_indices)
-                    s = s[:drop_index] + s[drop_index+1:]
-            if random.random() > 0.9 and len(s) > 1:
-                change_char = random.randint(0, len(s)-2)
-                s = s[:change_char] + s[change_char+1] + s[change_char] + s[change_char+2:]
-            return s
-
         t = tf.py_func(lambda string: string.strip(), [line], tf.string)
         t = tf.map_fn(lambda elem:
                 tf.py_func(lambda char: np.array(ord(char), dtype=np.int32), [elem], tf.int32), tf.string_split([t], '').values, tf.int32)
         dec_inp = tf.concat([[FLAGS.sos_id], t], 0)
         dec_out = tf.concat([t, [FLAGS.eos_id]], 0)
 
-        enc_inp = t = tf.py_func(transform_string, [line], tf.string)
+        enc_inp = t = tf.py_func(java_corruptor.corrupt, [line], tf.string)
         enc_inp = tf.map_fn(lambda elem:
                 tf.py_func(lambda char: np.array(ord(char), dtype=np.int32), [elem], tf.int32), tf.string_split([enc_inp], '').values, tf.int32)
 
