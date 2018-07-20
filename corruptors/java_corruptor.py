@@ -9,13 +9,13 @@ BRACKETS = ['(', ')', '[', ']', '{', '}']
 
 def corrupt(s):
     if random.random() > 0.9:
-        s = _remove_bracket(s)
-    if random.random() > 0.9:
-        s = _remove_semicolon(s)
-    if random.random() > 0.9:
         s = _misspell_variable(s)
     if random.random() > 0.9:
         s = _switch_statement_lines(s)
+    if random.random() > 0.9:
+        s = _remove_bracket(s)
+    if random.random() > 0.9:
+        s = _remove_semicolon(s)
     return s
 
 def _remove_bracket(s):
@@ -38,10 +38,16 @@ def _remove_semicolon(s):
 #     return s
 
 def _misspell_variable(s):
-    tree = javalang.parse.parse(s)
+    try:
+        tree = javalang.parse.parse(s)
+    except:
+        return s
     variables = []
     for _, node in tree.filter(javalang.tree.VariableDeclarator):
         variables.append(node)
+
+    if len(variables) == 0:
+        return s
 
     var_name = random.choice(variables).name
     occurances = []
@@ -53,21 +59,27 @@ def _misspell_variable(s):
 
     chosen_occurance = random.choice(occurances[1:])
     r = random.random()
-    if r >= 0.66 and len(var_name) > 1:
-        drop_char = random.randint(0, len(var_name) - 1)
-        s = s[:chosen_occurance.start()] + var_name[:drop_char] + var_name[drop_char+1:] + s[chosen_occurance.end():]
-    elif r >= 0.33:
-        add_char = random.choice(string.lowercase)
-        add_loc = random.randint(0, len(var_name) - 1)
-        s = s[:chosen_occurance.start()] + var_name[:add_loc] + add_char + var_name[add_loc:] + s[chosen_occurance.end():]
-    else:
-        change_char = random.randint(0, len(var_name) - 2)
-        s = s[:chosen_occurance.start()] + var_name[:change_char] + var_name[change_char+1] + var_name[change_char] + var_name[change_char+2:] + s[chosen_occurance.end():]
+    try:
+        if r >= 0.66 and len(var_name) > 1:
+            drop_char = random.randint(0, len(var_name) - 1)
+            s = s[:chosen_occurance.start()] + var_name[:drop_char] + var_name[drop_char+1:] + s[chosen_occurance.end():]
+        elif r >= 0.33 and len(var_name) > 1:
+            change_char = random.randint(0, len(var_name) - 2)
+            s = s[:chosen_occurance.start()] + var_name[:change_char] + var_name[change_char+1] + var_name[change_char] + var_name[change_char+2:] + s[chosen_occurance.end():]
+        else:
+            add_char = random.choice(string.lowercase)
+            add_loc = random.randint(0, len(var_name) - 1)
+            s = s[:chosen_occurance.start()] + var_name[:add_loc] + add_char + var_name[add_loc:] + s[chosen_occurance.end():]
+    except:
+        print s
 
     return s
 
 def _switch_statement_lines(s):
-    tree = javalang.parse.parse(s)
+    try:
+        tree = javalang.parse.parse(s)
+    except:
+        return s
     statements = []
     for _, node in tree.filter(javalang.tree.LocalVariableDeclaration):
         start = node.position[1]
@@ -78,10 +90,12 @@ def _switch_statement_lines(s):
         node = node.children[1]
         if not isinstance(node, javalang.tree.Assignment) and not isinstance(node, javalang.tree.MethodInvocation):
             continue
-        if isinstance(node, javalang.tree.Assignment):
+        if hasattr(node, 'position') and node.position:
+            start = node.position[1]
+        elif hasattr(node.children[0], 'position') and node.children[0].position:
             start = node.children[0].position[1]
         else:
-            start = node.position[1]
+            continue
         end = s[start:].find(';') + start + 1
         statements.append({'class': type(node), 'start': start, 'end': end})
 

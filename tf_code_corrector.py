@@ -3,8 +3,12 @@ import tensorflow as tf
 import numpy as np
 import random
 import os
+import glob
 import time
 import json
+import datetime
+import javalang
+import sys
 
 from models.train_model import TrainModel
 from models.evaluation_model import EvaluationModel
@@ -12,12 +16,12 @@ from corruptors import java_corruptor
 
 tf.app.flags.DEFINE_string("data_directory", "", "Directory of the data set")
 tf.app.flags.DEFINE_string("output_directory", "", "Output directory for checkpoints and tests")
-tf.app.flags.DEFINE_integer("max_sequence_length", 200, "Max length of input sequence")
+tf.app.flags.DEFINE_integer("max_sequence_length", 1000, "Max length of input sequence")
 tf.app.flags.DEFINE_integer("pad_id", 128, "Code of padding character")
 tf.app.flags.DEFINE_integer("sos_id", 2, "Code of start-of-sequence character")
 tf.app.flags.DEFINE_integer("eos_id", 3, "Code of end-of-sequence character")
-tf.app.flags.DEFINE_integer("batch_size", 128, "Bath size for training input")
-tf.app.flags.DEFINE_integer("num_layers", 2, "Number of layers of the network")
+tf.app.flags.DEFINE_integer("batch_size", 32, "Bath size for training input")
+tf.app.flags.DEFINE_integer("num_layers", 4, "Number of layers of the network")
 tf.app.flags.DEFINE_integer("num_units", 256, "Number of units in each layer")
 tf.app.flags.DEFINE_integer("num_iterations", 12000, "Number of iterations in training")
 tf.app.flags.DEFINE_integer("eval_steps", 1000, "Step size for evaluation")
@@ -50,8 +54,8 @@ def main(_):
     eval_sess = tf.Session(graph=eval_graph)
 
     train_sess.run(initializer)
-    initialize_iterator(train_iterator, train_file, 'trainJava.csv', train_sess)
-    initialize_iterator(eval_iterator, eval_file, 'testJava.csv', eval_sess)
+    initialize_iterator(train_iterator, train_file, 'train', train_sess)
+    initialize_iterator(eval_iterator, eval_file, 'test', eval_sess)
 
     for i in range(FLAGS.num_iterations):
         trained = False
@@ -60,28 +64,24 @@ def main(_):
                 train_model.train(train_sess, i+1)
                 trained = True
             except tf.errors.OutOfRangeError:
-                initialize_iterator(train_iterator, train_file, 'trainJava.csv', train_sess)
+                initialize_iterator(train_iterator, train_file, 'train', train_sess)
 
 
         if (i+1) % FLAGS.eval_steps == 0:
             checkpoint_path = train_model.saver.save(train_sess, FLAGS.output_directory, global_step=i+1)
             eval_model.saver.restore(eval_sess, checkpoint_path)
             evaluated = False
-            while(not evaluated):
-                try:
-                    eval_model.eval(eval_sess)
-                    evaluated = True
-                except tf.errors.OutOfRangeError:
-                    initialize_iterator(eval_iterator, eval_file, 'testJava.csv', eval_sess)
+            # while(not evaluated):
+            #     try:
+            #         eval_model.eval(eval_sess)
+            #         evaluated = True
+            #     except tf.errors.OutOfRangeError:
+            #         initialize_iterator(eval_iterator, eval_file, 'test', eval_sess)
 
 
-def initialize_iterator(iterator, file_placeholder, projects_file, sess):
-    with open(os.path.join(FLAGS.data_directory, projects_file), 'r') as project_data:
-        projects = np.array(project_data.read().splitlines())
-        project = projects[random.randint(0, len(projects)-1)]
-        project = os.path.join(FLAGS.data_directory, project+'.java')
-
-    sess.run(iterator.initializer, feed_dict={file_placeholder: project})
+def initialize_iterator(iterator, file_placeholder, file_name, sess):
+    file = random.choice(glob.glob(os.path.join(FLAGS.data_directory, file_name) + '*'))
+    sess.run(iterator.initializer, feed_dict={file_placeholder: file})
 
 def create_iterator():
     java_file = tf.placeholder(tf.string, shape=[])
@@ -101,18 +101,30 @@ def create_iterator():
 
 
     with tf.device('/cpu:0'):
+        def valid_and_ascii(s):
+            try:
+                s = unicode(s, 'utf-8')
+            except:
+                print 'ascii_error'
+                sys.stdout.flush()
+                return False
+            return True
+
         dataset = tf.data.TextLineDataset(java_file).filter(lambda line:
-                                    tf.logical_and(
-                                        tf.not_equal(
-                                            tf.size(tf.string_split([tf.py_func(lambda l: l.strip(), [line], tf.string)],"")),
-                                            tf.constant(0, dtype=tf.int32)
-                                        ),
-                                        tf.less(
-                                            tf.size(tf.string_split([tf.py_func(lambda l: l.strip(), [line], tf.string)],"")),
-                                            tf.constant(FLAGS.max_sequence_length, dtype=tf.int32)
-                                        )
-                                    )
-                               )
+                        tf.logical_and(
+                            tf.py_func(lambda l: valid_and_ascii(l), [line], tf.bool),
+                            tf.logical_and(
+                                tf.not_equal(
+                                    tf.size(tf.string_split([tf.py_func(lambda l: l.strip(), [line], tf.string)],"")),
+                                    tf.constant(0, dtype=tf.int32)
+                                ),
+                                tf.less(
+                                    tf.size(tf.string_split([tf.py_func(lambda l: l.strip(), [line], tf.string)],"")),
+                                    tf.constant(FLAGS.max_sequence_length, dtype=tf.int32)
+                                )
+                            )
+                        )
+        )
         dataset = dataset.shuffle(10000)
         dataset = dataset.map(map_function, num_parallel_calls = 4)
         pad = tf.constant(FLAGS.pad_id, dtype=tf.int32)
