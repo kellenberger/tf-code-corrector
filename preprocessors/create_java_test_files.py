@@ -74,10 +74,6 @@ def create_test_file(dir, file_name, project_files, pertubation_fn, unchanged_al
 
 
 def main(_):
-    with open(os.path.join(FLAGS.java_directory, 'eval.java'), 'w') as eval_file:
-        for i in range(256):
-            eval_file.write("public class A { public int getOne(){ return 1; } }\n")
-
     test_directory = os.path.join(FLAGS.java_directory, 'test_files')
     if not os.path.exists(test_directory):
         os.makedirs(test_directory)

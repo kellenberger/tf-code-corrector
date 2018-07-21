@@ -16,6 +16,10 @@ def main(_):
     assert FLAGS.split_directory
     assert FLAGS.out_directory
 
+    with open(os.path.join(FLAGS.out_directory, 'eval.java'), 'w') as eval_file:
+        for i in range(256):
+            eval_file.write("public class A { public int getOne(){ return 1; } }\n")
+
     _write_files_to_new_location('trainJava.csv', 'train_')
     _write_files_to_new_location('testJava.csv', 'test_')
 
