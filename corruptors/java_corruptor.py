@@ -71,7 +71,7 @@ def _misspell_variable(s):
             add_loc = random.randint(0, len(var_name) - 1)
             s = s[:chosen_occurance.start()] + var_name[:add_loc] + add_char + var_name[add_loc:] + s[chosen_occurance.end():]
     except:
-        print s
+        pass
 
     return s
 

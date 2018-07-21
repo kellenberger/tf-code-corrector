@@ -55,7 +55,7 @@ def main(_):
 
     train_sess.run(initializer)
     initialize_iterator(train_iterator, train_file, 'train', train_sess)
-    initialize_iterator(eval_iterator, eval_file, 'test', eval_sess)
+    initialize_iterator(eval_iterator, eval_file, 'eval', eval_sess)
 
     for i in range(FLAGS.num_iterations):
         trained = False
@@ -71,16 +71,16 @@ def main(_):
             checkpoint_path = train_model.saver.save(train_sess, FLAGS.output_directory, global_step=i+1)
             eval_model.saver.restore(eval_sess, checkpoint_path)
             evaluated = False
-            # while(not evaluated):
-            #     try:
-            #         eval_model.eval(eval_sess)
-            #         evaluated = True
-            #     except tf.errors.OutOfRangeError:
-            #         initialize_iterator(eval_iterator, eval_file, 'test', eval_sess)
+            while(not evaluated):
+                try:
+                    eval_model.eval(eval_sess)
+                    evaluated = True
+                except tf.errors.OutOfRangeError:
+                    initialize_iterator(eval_iterator, eval_file, 'eval', eval_sess)
 
 
 def initialize_iterator(iterator, file_placeholder, file_name, sess):
-    file = random.choice(glob.glob(os.path.join(FLAGS.data_directory, file_name) + '*'))
+    file = random.choice(glob.glob(os.path.join(FLAGS.data_directory, file_name) + '*.java'))
     sess.run(iterator.initializer, feed_dict={file_placeholder: file})
 
 def create_iterator():
@@ -105,8 +105,6 @@ def create_iterator():
             try:
                 s = unicode(s, 'utf-8')
             except:
-                print 'ascii_error'
-                sys.stdout.flush()
                 return False
             return True
 

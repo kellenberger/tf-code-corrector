@@ -61,18 +61,17 @@ class EvaluationModel:
 
     def eval(self, session):
         translations, target, input = session.run([self.translations, self.target_output, self.encoder_input])
-        for i in range(5):
-            s = ''
-            for c in input[i]:
-                s+= chr(c)
-            print("Source: {}".format(s))
-            s = ''
-            for c in target[i]:
-                s += chr(c)
-            print("Target: {}".format(s))
-            s = ''
-            for c in translations[i]:
-                s += chr(c)
-            print("Actual: {}".format(s))
+        s = ''
+        for c in input[0]:
+            s+= chr(c)
+        print("Source: {}".format(s))
+        s = ''
+        for c in target[0]:
+            s += chr(c)
+        print("Target: {}".format(s))
+        s = ''
+        for c in translations[0]:
+            s += chr(c)
+        print("Actual: {}".format(s))
         sys.stdout.flush()
         return translations
