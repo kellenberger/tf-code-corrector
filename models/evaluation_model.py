@@ -32,7 +32,8 @@ class EvaluationModel:
         # Create an attention mechanism
         attention_mechanism = tf.contrib.seq2seq.LuongAttention(
             FLAGS.num_units, encoder_outputs,
-            memory_sequence_length=sequence_lengths)
+            memory_sequence_length=sequence_lengths,
+            scale=True)
         decoder_cell = tf.contrib.seq2seq.AttentionWrapper(
             decoder_cell, attention_mechanism,
             attention_layer_size=FLAGS.num_units)

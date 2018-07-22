@@ -30,8 +30,10 @@ class TrainModel:
 
         projection_layer = tf.layers.Dense(256, use_bias = False) # 256 characters can be represented in UTF-8
 
+
         encoder_layers = [tf.nn.rnn_cell.LSTMCell(FLAGS.num_units) for i in range(FLAGS.num_layers)]
         encoder_cell = tf.nn.rnn_cell.MultiRNNCell(encoder_layers)
+
         encoder_outputs, encoder_state = tf.nn.dynamic_rnn(cell = encoder_cell,
                                                             inputs = encoder_emb_inp,
                                                             sequence_length = sequence_lengths,
@@ -43,7 +45,8 @@ class TrainModel:
         # Create an attention mechanism
         attention_mechanism = tf.contrib.seq2seq.LuongAttention(
             FLAGS.num_units, encoder_outputs,
-            memory_sequence_length=sequence_lengths)
+            memory_sequence_length=sequence_lengths,
+            scale=True)
         decoder_cell = tf.contrib.seq2seq.AttentionWrapper(
             decoder_cell, attention_mechanism,
             attention_layer_size=FLAGS.num_units)
