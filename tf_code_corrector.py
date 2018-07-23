@@ -27,6 +27,7 @@ tf.app.flags.DEFINE_integer("num_layers", 4, "Number of layers of the network")
 tf.app.flags.DEFINE_integer("num_units", 256, "Number of units in each layer")
 tf.app.flags.DEFINE_integer("num_iterations", 20000, "Number of iterations in training")
 tf.app.flags.DEFINE_integer("eval_steps", 1000, "Step size for evaluation")
+tf.app.flags.DEFINE_integer("random_seed", 1234, "Seed for all random operations")
 tf.app.flags.DEFINE_float("max_gradient_norm", 5.0, "Clip gradients to this norm")
 tf.app.flags.DEFINE_float("learning_rate", 0.001, "Learning rate for the optimizer")
 
@@ -40,15 +41,19 @@ def main(_):
     with open(os.path.join(FLAGS.output_directory, 'hparams.json'), 'w') as hparam:
         json.dump(FLAGS.flag_values_dict(), hparam)
 
+    random.seed(FLAGS.random_seed)
+
     train_graph = tf.Graph()
     eval_graph = tf.Graph()
 
     with train_graph.as_default():
+        tf.set_random_seed(FLAGS.random_seed)
         train_iterator, train_file, train_sequence_length = create_iterator()
         train_model = TrainModel(FLAGS, train_iterator)
         initializer = tf.global_variables_initializer()
 
     with eval_graph.as_default():
+        tf.set_random_seed(FLAGS.random_seed)
         eval_iterator, eval_file, eval_sequence_length = create_iterator()
         eval_model = EvaluationModel(FLAGS, eval_iterator)
 

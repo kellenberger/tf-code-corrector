@@ -54,7 +54,7 @@ class EvaluationModel:
         helper = tf.contrib.seq2seq.InferenceHelper(
                 sample_fn=sample_fn,
                 sample_shape=[1],
-                sample_dtype=tf.float32,
+                sample_dtype=tf.int32,
                 start_inputs=start_inputs,
                 end_fn=end_fn,
                 next_inputs_fn=next_inputs_fn)
