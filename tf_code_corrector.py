@@ -18,14 +18,14 @@ tf.app.flags.DEFINE_string("data_directory", "", "Directory of the data set")
 tf.app.flags.DEFINE_string("output_directory", "", "Output directory for checkpoints and tests")
 tf.app.flags.DEFINE_integer("max_sequence_length", 1000, "Max length of input sequence")
 tf.app.flags.DEFINE_integer("sequence_length_step", 200, "Step size in which the sequence length is increased")
-tf.app.flags.DEFINE_integer("sequence_length_increase_iterations", 2000, "Number of iterations after which the sequence_length is increased")
+tf.app.flags.DEFINE_integer("sequence_length_increase_iterations", 3000, "Number of iterations after which the sequence_length is increased")
 tf.app.flags.DEFINE_integer("pad_id", 128, "Code of padding character")
 tf.app.flags.DEFINE_integer("sos_id", 2, "Code of start-of-sequence character")
 tf.app.flags.DEFINE_integer("eos_id", 3, "Code of end-of-sequence character")
 tf.app.flags.DEFINE_integer("batch_size", 32, "Batch size for training input")
 tf.app.flags.DEFINE_integer("num_layers", 4, "Number of layers of the network")
 tf.app.flags.DEFINE_integer("num_units", 256, "Number of units in each layer")
-tf.app.flags.DEFINE_integer("num_iterations", 12000, "Number of iterations in training")
+tf.app.flags.DEFINE_integer("num_iterations", 20000, "Number of iterations in training")
 tf.app.flags.DEFINE_integer("eval_steps", 1000, "Step size for evaluation")
 tf.app.flags.DEFINE_float("max_gradient_norm", 5.0, "Clip gradients to this norm")
 tf.app.flags.DEFINE_float("learning_rate", 0.001, "Learning rate for the optimizer")
@@ -62,15 +62,6 @@ def main(_):
     initialize_iterator(eval_iterator, eval_file, 'eval', eval_sequence_length, FLAGS.max_sequence_length, eval_sess)
 
     for i in range(FLAGS.num_iterations):
-        if (i+1) % FLAGS.sequence_length_increase_iterations == 0:
-            step = (i+1) // FLAGS.sequence_length_increase_iterations
-            step += 1
-            new_sequence_length = step * FLAGS.sequence_length_step
-            if new_sequence_length <= FLAGS.max_sequence_length:
-                initialize_iterator(train_iterator, train_file, 'train', train_sequence_length, new_sequence_length, train_sess)
-                print("Max sequence length increased to {}".format(new_sequence_length))
-                sys.stdout.flush()
-
         trained = False
         while(not trained):
             try:
@@ -95,6 +86,15 @@ def main(_):
                     evaluated = True
                 except tf.errors.OutOfRangeError:
                     initialize_iterator(eval_iterator, eval_file, 'eval', eval_sequence_length, FLAGS.max_sequence_length,eval_sess)
+
+        if (i+1) % FLAGS.sequence_length_increase_iterations == 0:
+            step = (i+1) // FLAGS.sequence_length_increase_iterations
+            step += 1
+            new_sequence_length = step * FLAGS.sequence_length_step
+            if new_sequence_length <= FLAGS.max_sequence_length:
+                initialize_iterator(train_iterator, train_file, 'train', train_sequence_length, new_sequence_length, train_sess)
+                print("Max sequence length increased to {}".format(new_sequence_length))
+                sys.stdout.flush()
 
 
 def initialize_iterator(iterator, file_placeholder, file_name, sequence_length_placeholder, sequence_length, sess):

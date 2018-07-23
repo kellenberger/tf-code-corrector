@@ -43,10 +43,6 @@ def _write_files_to_new_location(source_file, output_name):
                     if file.endswith('.java') and not file.startswith('.'):
                         with open(os.path.join(subdir, file), 'r') as file_data:
                             content = file_data.read()
-                            if content.find('public class') == -1:
-                                continue
-                            else:
-                                content = content[content.find('public class'):]
                             content = _remove_comments(content).strip()
                             content = re.sub('\s+', ' ', content)
                             if content:

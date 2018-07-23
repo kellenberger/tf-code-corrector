@@ -11,6 +11,7 @@ class EvaluationModel:
         encoder_input, sequence_lengths, decoder_input, target_output, target_lengths = iterator.get_next()
         sequence_lengths = tf.reshape(sequence_lengths, [FLAGS.batch_size])
         target_lengths = tf.reshape(target_lengths, [FLAGS.batch_size])
+        encoder_input = tf.reverse(encoder_input, [1])
 
         # Embedding
         embedding = tf.get_variable("embedding", [256, 10], dtype=tf.float32)
@@ -23,7 +24,6 @@ class EvaluationModel:
         encoder_cell = tf.nn.rnn_cell.MultiRNNCell(encoder_layers)
         encoder_outputs, encoder_state = tf.nn.dynamic_rnn(cell = encoder_cell,
                                                             inputs = encoder_emb_inp,
-                                                            sequence_length = sequence_lengths,
                                                             dtype = tf.float32)
 
         decoder_layers = [tf.nn.rnn_cell.LSTMCell(FLAGS.num_units) for i in range(FLAGS.num_layers)]
@@ -32,7 +32,6 @@ class EvaluationModel:
         # Create an attention mechanism
         attention_mechanism = tf.contrib.seq2seq.LuongAttention(
             FLAGS.num_units, encoder_outputs,
-            memory_sequence_length=sequence_lengths,
             scale=True)
         decoder_cell = tf.contrib.seq2seq.AttentionWrapper(
             decoder_cell, attention_mechanism,
@@ -63,7 +62,7 @@ class EvaluationModel:
     def eval(self, session):
         translations, target, input = session.run([self.translations, self.target_output, self.encoder_input])
         s = ''
-        for c in input[0]:
+        for c in reversed(input[0]):
             s+= chr(c)
         print("Source: {}".format(s))
         s = ''

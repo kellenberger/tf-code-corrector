@@ -12,6 +12,7 @@ class TrainModel:
         encoder_input, sequence_lengths, decoder_input, target_output, target_lengths = iterator.get_next()
         sequence_lengths = tf.reshape(sequence_lengths, [FLAGS.batch_size])
         target_lengths = tf.reshape(target_lengths, [FLAGS.batch_size])
+        encoder_input = tf.reverse(encoder_input, [1])
 
         pad_code = tf.constant(FLAGS.pad_id, dtype = tf.int32)
 
@@ -36,7 +37,6 @@ class TrainModel:
 
         encoder_outputs, encoder_state = tf.nn.dynamic_rnn(cell = encoder_cell,
                                                             inputs = encoder_emb_inp,
-                                                            sequence_length = sequence_lengths,
                                                             dtype = tf.float32)
 
         decoder_layers = [tf.nn.rnn_cell.LSTMCell(FLAGS.num_units) for i in range(FLAGS.num_layers)]
@@ -45,7 +45,6 @@ class TrainModel:
         # Create an attention mechanism
         attention_mechanism = tf.contrib.seq2seq.LuongAttention(
             FLAGS.num_units, encoder_outputs,
-            memory_sequence_length=sequence_lengths,
             scale=True)
         decoder_cell = tf.contrib.seq2seq.AttentionWrapper(
             decoder_cell, attention_mechanism,
