@@ -13,17 +13,15 @@ class EvaluationModel:
         target_lengths = tf.reshape(target_lengths, [FLAGS.batch_size])
         encoder_input = tf.reverse(encoder_input, [1])
 
-        # Embedding
-        embedding = tf.get_variable("embedding", [256, 10], dtype=tf.float32)
-        encoder_emb_inp = tf.nn.embedding_lookup(embedding, encoder_input)
-        decoder_emb_inp = tf.nn.embedding_lookup(embedding, decoder_input)
+        encoder_input = tf.reshape(encoder_input, [FLAGS.batch_size, -1, 1])
+        encoder_input = tf.cast(encoder_input, tf.float32)
 
         projection_layer = tf.layers.Dense(256, use_bias = False) # 256 characters can be represented in UTF-8
 
         encoder_layers = [tf.nn.rnn_cell.LSTMCell(FLAGS.num_units) for i in range(FLAGS.num_layers)]
         encoder_cell = tf.nn.rnn_cell.MultiRNNCell(encoder_layers)
         encoder_outputs, encoder_state = tf.nn.dynamic_rnn(cell = encoder_cell,
-                                                            inputs = encoder_emb_inp,
+                                                            inputs = encoder_input,
                                                             dtype = tf.float32)
 
         decoder_layers = [tf.nn.rnn_cell.LSTMCell(FLAGS.num_units) for i in range(FLAGS.num_layers)]
@@ -41,9 +39,25 @@ class EvaluationModel:
           cell_state=encoder_state)
 
         # Helper
-        helper = tf.contrib.seq2seq.GreedyEmbeddingHelper(
-            embedding,
-            tf.fill([FLAGS.batch_size], FLAGS.sos_id), FLAGS.eos_id)
+        def sample_fn(output):
+            return tf.reshape(tf.argmax(output, axis=-1, output_type=tf.int32), [FLAGS.batch_size, 1])
+
+        def end_fn(sample_ids):
+            return tf.reshape(tf.equal(sample_ids, tf.constant(FLAGS.eos_id, tf.int32)), [FLAGS.batch_size])
+
+        def next_inputs_fn(sample_ids):
+            return tf.cast(sample_ids, tf.float32)
+
+        start_inputs = tf.fill([FLAGS.batch_size, 1], FLAGS.sos_id)
+        start_inputs = tf.cast(start_inputs, tf.float32)
+
+        helper = tf.contrib.seq2seq.InferenceHelper(
+                sample_fn=sample_fn,
+                sample_shape=[1],
+                sample_dtype=tf.float32,
+                start_inputs=start_inputs,
+                end_fn=end_fn,
+                next_inputs_fn=next_inputs_fn)
 
         # Decoder
         decoder = tf.contrib.seq2seq.BasicDecoder(
