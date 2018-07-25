@@ -30,7 +30,7 @@ class TrainModel:
                                         target_output,
                                         dtype= tf.bool))
 
-        projection_layer = tf.layers.Dense(256, use_bias = False) # 256 characters can be represented in UTF-8
+        projection_layer = tf.layers.Dense(128, use_bias = False) # 128 characters can be represented in ASCII
 
 
         encoder_layers = [tf.nn.rnn_cell.LSTMCell(FLAGS.num_units) for i in range(FLAGS.num_layers)]

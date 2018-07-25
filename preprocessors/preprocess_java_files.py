@@ -45,6 +45,8 @@ def _write_files_to_new_location(source_file, output_name):
                             content = file_data.read()
                             content = _remove_comments(content).strip()
                             content = re.sub('\s+', ' ', content)
+                            if len([char for char in content if ord(char)>127]) > 0:
+                                continue
                             if content:
                                 output_file.write(content)
                                 output_file.write("\n")

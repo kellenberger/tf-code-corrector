@@ -8,15 +8,29 @@ import re
 BRACKETS = ['(', ')', '[', ']', '{', '}']
 
 def corrupt(s):
-    if random.random() > 0.9:
-        s = _misspell_variable(s)
-    if random.random() > 0.9:
-        s = _switch_statement_lines(s)
-    if random.random() > 0.9:
-        s = _remove_bracket(s)
-    if random.random() > 0.9:
-        s = _remove_semicolon(s)
-    return s
+    if not random.random() > 0.75:
+        return s
+
+    # switch_statement and misspell_variable are not always possible. That's why they get a higher probability
+    if random.random() > 0.5:
+        r = _switch_statement_lines(s)
+        if not s == r:
+            return r
+
+    choice = random.random()
+    if choice > 0.65:
+        r = _misspell_variable(s)
+        if not s == r:
+            return r
+    if choice > 0.5:
+        r = _change_method_return(s)
+        if not s == r:
+            return r
+    if choice > 0.3:
+        return _remove_bracket(s)
+    else:
+        return _remove_semicolon(s)
+
 
 def _remove_bracket(s):
     bracket_indices = [i for i, c in enumerate(s) if c in BRACKETS]
@@ -32,11 +46,6 @@ def _remove_semicolon(s):
         s = s[:drop_index] + s[drop_index+1:]
     return s
 
-# def _add_typo(s):
-#     change_char = random.randint(0, len(s)-2)
-#     s = s[:change_char] + s[change_char+1] + s[change_char] + s[change_char+2:]
-#     return s
-
 def _misspell_variable(s):
     try:
         tree = javalang.parse.parse(s)
@@ -44,6 +53,9 @@ def _misspell_variable(s):
         return s
     variables = []
     for _, node in tree.filter(javalang.tree.VariableDeclarator):
+        variables.append(node)
+
+    for _, node in tree.filter(javalang.tree.FormalParameter):
         variables.append(node)
 
     if len(variables) == 0:
@@ -115,3 +127,30 @@ def _switch_statement_lines(s):
 
     first, second = random.choice(possible_statements)
     return s[:first['start']] + s[second['start']:second['end']] + s[first['start']:first['end']] + s[second['end']:]
+
+def _change_method_return(s):
+    try:
+        tree = javalang.parse.parse(s)
+    except:
+        return s
+
+    methods = []
+    for _, node in tree.filter(javalang.tree.MethodDeclaration):
+        methods.append(node)
+
+    if len(methods) == 0:
+        return s
+
+    method = random.choice(methods)
+
+    if method.return_type:
+        method_declaration = method.return_type.name + " " + method.name
+        new_declaration = "void " + method.name
+    else:
+        method_declaration = "void " + method.name
+        new_declaration = "int " + method.name
+
+    if s.find(method_declaration) != -1:
+        return s.replace(method_declaration, new_declaration, 1)
+
+    return s

@@ -9,7 +9,7 @@ from models.evaluation_model import EvaluationModel
 
 tf.app.flags.DEFINE_string("data_directory", "", "Directory of the data set")
 tf.app.flags.DEFINE_string("output_directory", "", "Output directory for checkpoints and tests")
-tf.app.flags.DEFINE_integer("pad_id", 128, "Code of padding character")
+tf.app.flags.DEFINE_integer("pad_id", 1, "Code of padding character")
 tf.app.flags.DEFINE_integer("sos_id", 2, "Code of start-of-sequence character")
 tf.app.flags.DEFINE_integer("eos_id", 3, "Code of end-of-sequence character")
 tf.app.flags.DEFINE_integer("batch_size", 32, "Batch size for training input")
@@ -44,7 +44,7 @@ def main(_):
         with open(os.path.join(FLAGS.output_directory, file_name + '.java'), 'w') as translation_file:
             while(True):
                 try:
-                    translations = eval_model.eval(eval_sess)
+                    translations = eval_model.eval(eval_sess, silent=True)
                     for t in translations:
                         s = ''
                         for c in t:

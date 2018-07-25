@@ -19,7 +19,7 @@ tf.app.flags.DEFINE_string("output_directory", "", "Output directory for checkpo
 tf.app.flags.DEFINE_integer("max_sequence_length", 1000, "Max length of input sequence")
 tf.app.flags.DEFINE_integer("sequence_length_step", 200, "Step size in which the sequence length is increased")
 tf.app.flags.DEFINE_integer("sequence_length_increase_iterations", 3000, "Number of iterations after which the sequence_length is increased")
-tf.app.flags.DEFINE_integer("pad_id", 128, "Code of padding character")
+tf.app.flags.DEFINE_integer("pad_id", 1, "Code of padding character")
 tf.app.flags.DEFINE_integer("sos_id", 2, "Code of start-of-sequence character")
 tf.app.flags.DEFINE_integer("eos_id", 3, "Code of end-of-sequence character")
 tf.app.flags.DEFINE_integer("batch_size", 32, "Batch size for training input")

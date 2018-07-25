@@ -16,7 +16,7 @@ class EvaluationModel:
         encoder_input = tf.reshape(encoder_input, [FLAGS.batch_size, -1, 1])
         encoder_input = tf.cast(encoder_input, tf.float32)
 
-        projection_layer = tf.layers.Dense(256, use_bias = False) # 256 characters can be represented in UTF-8
+        projection_layer = tf.layers.Dense(128, use_bias = False) # 128 characters can be represented in ASCII
 
         encoder_layers = [tf.nn.rnn_cell.LSTMCell(FLAGS.num_units) for i in range(FLAGS.num_layers)]
         encoder_cell = tf.nn.rnn_cell.MultiRNNCell(encoder_layers)
@@ -73,19 +73,22 @@ class EvaluationModel:
 
         self.saver = tf.train.Saver()
 
-    def eval(self, session):
+    def eval(self, session, silent=False):
         translations, target, input = session.run([self.translations, self.target_output, self.encoder_input])
-        s = ''
-        for c in reversed(input[0]):
-            s+= chr(c)
-        print("Source: {}".format(s))
-        s = ''
-        for c in target[0]:
-            s += chr(c)
-        print("Target: {}".format(s))
-        s = ''
-        for c in translations[0]:
-            s += chr(c)
-        print("Actual: {}".format(s))
-        sys.stdout.flush()
+        if not silent:
+            s = ''
+            for c in reversed(input[0]):
+                if c == 128:
+                    continue
+                s+= chr(c)
+            print("Source: {}".format(s))
+            s = ''
+            for c in target[0]:
+                s += chr(c)
+            print("Target: {}".format(s))
+            s = ''
+            for c in translations[0]:
+                s += chr(c)
+            print("Actual: {}".format(s))
+            sys.stdout.flush()
         return translations

@@ -13,36 +13,6 @@ tf.app.flags.DEFINE_integer("lines_per_file", 8192, "Lines in each test file")
 
 FLAGS = tf.app.flags.FLAGS
 
-def add_typo(line):
-    if len(line) <= 1:
-        return None
-
-    change_char = random.randint(0, len(line)-2)
-    return line[:change_char] + line[change_char+1] + line[change_char] + line[change_char+2:]
-
-def remove_bracket(line):
-    if len(line) <= 1:
-        return None
-
-    brackets = ['(', ')', '[', ']', '{', '}']
-    bracket_indices = [i for i, c in enumerate(line) if c in brackets]
-    if not bracket_indices:
-        return None
-
-    drop_index = random.choice(bracket_indices)
-    return line[:drop_index] + line[drop_index+1:]
-
-def remove_semicolon(line):
-    if len(line) <= 1:
-        return None
-
-    semicolon_indices = [i for i, c in enumerate(line) if c == ';']
-    if not semicolon_indices:
-        return None
-
-    drop_index = random.choice(semicolon_indices)
-    return line[:drop_index] + line[drop_index+1:]
-
 def do_nothing(line):
     return line
 
@@ -88,6 +58,7 @@ def main(_):
     create_test_file(test_directory, 'variable', test_projects, java_corruptor._misspell_variable)
     print('Create Switch')
     create_test_file(test_directory, 'switch', test_projects, java_corruptor._switch_statement_lines)
+    create_test_file(test_directory, 'method_return', test_projects, java_corruptor._change_method_return)
     print('Create Unperturbed')
     create_test_file(test_directory, 'unperturbed', test_projects, do_nothing, unchanged_allowed=True)
 
