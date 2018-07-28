@@ -1,6 +1,7 @@
 """Evaluation Model"""
 import tensorflow as tf
 import sys
+import math
 
 from batch_generators.java_batch_generator import JavaBatchGenerator
 
@@ -18,13 +19,17 @@ class EvaluationModel:
 
         projection_layer = tf.layers.Dense(128, use_bias = False) # 128 characters can be represented in ASCII
 
-        encoder_layers = [tf.nn.rnn_cell.LSTMCell(FLAGS.num_units) for i in range(FLAGS.num_layers)]
+        encoder_layers = []
+        for i in range(FLAGS.num_layers):
+            encoder_layers.append(tf.contrib.rnn.DeviceWrapper(tf.nn.rnn_cell.LSTMCell(FLAGS.num_units), "/gpu:%d" % (i % FLAGS.num_gpus)))
         encoder_cell = tf.nn.rnn_cell.MultiRNNCell(encoder_layers)
         encoder_outputs, encoder_state = tf.nn.dynamic_rnn(cell = encoder_cell,
                                                             inputs = encoder_input,
                                                             dtype = tf.float32)
 
-        decoder_layers = [tf.nn.rnn_cell.LSTMCell(FLAGS.num_units) for i in range(FLAGS.num_layers)]
+        decoder_layers = []
+        for i in range(FLAGS.num_layers):
+            decoder_layers.append(tf.contrib.rnn.DeviceWrapper(tf.nn.rnn_cell.LSTMCell(FLAGS.num_units), "/gpu:%d" % (i % FLAGS.num_gpus)))
         decoder_cell = tf.nn.rnn_cell.MultiRNNCell(decoder_layers)
 
         # Create an attention mechanism

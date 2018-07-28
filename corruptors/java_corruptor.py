@@ -32,6 +32,13 @@ def corrupt(s):
         return _remove_semicolon(s)
 
 
+def corrupt_simple(s):
+    if random.random() > 0.5:
+        return _remove_bracket(s)
+    else:
+        return _remove_semicolon(s)
+
+
 def _remove_bracket(s):
     bracket_indices = [i for i, c in enumerate(s) if c in BRACKETS]
     if bracket_indices:
