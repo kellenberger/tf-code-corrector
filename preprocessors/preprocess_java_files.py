@@ -3,6 +3,8 @@ import os
 import tensorflow as tf
 from shutil import copyfile
 import re
+import sys
+from ..corruptors import java_corruptor
 
 tf.app.flags.DEFINE_string("java_directory", "", "Java directory path")
 tf.app.flags.DEFINE_string("split_directory", "", "Split dirctory path")
@@ -37,6 +39,7 @@ def _write_files_to_new_location(source_file, output_name):
         output_file = open(os.path.join(FLAGS.out_directory, output_name + str(file_count) + '.java'), 'w')
         for i, project in enumerate(source_projects):
             print('Source project: {}/{}'.format(i, project_count))
+            sys.stdout.flush()
             project = project.strip()
             for subdir, _, files in os.walk(os.path.join(FLAGS.java_directory, project)):
                 for file in files:
@@ -45,7 +48,7 @@ def _write_files_to_new_location(source_file, output_name):
                             content = file_data.read()
                             content = _remove_comments(content).strip()
                             content = re.sub('\s+', ' ', content)
-                            if len([char for char in content if ord(char)>127]) > 0:
+                            if len([char for char in content if ord(char)>127]) > 0 or not _corruptable(content):
                                 continue
                             if content:
                                 output_file.write(content)
@@ -69,6 +72,22 @@ def _remove_comments(text):
         re.DOTALL | re.MULTILINE
     )
     return re.sub(pattern, replacer, text)
+
+def _corruptable(s):
+    try:
+        if s == java_corruptor._switch_statement_lines(s):
+            return False
+        if s == java_corruptor._misspell_variable(s):
+            return False
+        if s == java_corruptor._change_method_return(s):
+            return False
+        if s == java_corruptor._remove_bracket(s):
+            return False
+        if s == java_corruptor._remove_semicolon(s):
+            return False
+    except RuntimeError:
+        return False
+    return True
 
 if __name__ == "__main__":
     tf.app.run()

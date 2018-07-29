@@ -68,29 +68,32 @@ def _misspell_variable(s):
     if len(variables) == 0:
         return s
 
-    var_name = random.choice(variables).name
-    occurances = []
-    for occurance in re.finditer(r'\b(' + var_name + r')\b', s):
-        occurances.append(occurance)
+    random.shuffle(variables)
+    for variable in variables:
+        var_name = variable.name
+        occurances = []
+        for occurance in re.finditer(r'\b(' + var_name + r')\b', s):
+            occurances.append(occurance)
 
-    if len(occurances) <= 1:
-        return s
+        if len(occurances) <= 1:
+            continue
 
-    chosen_occurance = random.choice(occurances[1:])
-    r = random.random()
-    try:
-        if r >= 0.66 and len(var_name) > 1:
-            drop_char = random.randint(0, len(var_name) - 1)
-            s = s[:chosen_occurance.start()] + var_name[:drop_char] + var_name[drop_char+1:] + s[chosen_occurance.end():]
-        elif r >= 0.33 and len(var_name) > 1:
-            change_char = random.randint(0, len(var_name) - 2)
-            s = s[:chosen_occurance.start()] + var_name[:change_char] + var_name[change_char+1] + var_name[change_char] + var_name[change_char+2:] + s[chosen_occurance.end():]
-        else:
-            add_char = random.choice(string.lowercase)
-            add_loc = random.randint(0, len(var_name) - 1)
-            s = s[:chosen_occurance.start()] + var_name[:add_loc] + add_char + var_name[add_loc:] + s[chosen_occurance.end():]
-    except:
-        pass
+        chosen_occurance = random.choice(occurances[1:])
+        r = random.random()
+        try:
+            if r >= 0.66 and len(var_name) > 1:
+                drop_char = random.randint(0, len(var_name) - 1)
+                s = s[:chosen_occurance.start()] + var_name[:drop_char] + var_name[drop_char+1:] + s[chosen_occurance.end():]
+            elif r >= 0.33 and len(var_name) > 1:
+                change_char = random.randint(0, len(var_name) - 2)
+                s = s[:chosen_occurance.start()] + var_name[:change_char] + var_name[change_char+1] + var_name[change_char] + var_name[change_char+2:] + s[chosen_occurance.end():]
+            else:
+                add_char = random.choice(string.lowercase)
+                add_loc = random.randint(0, len(var_name) - 1)
+                s = s[:chosen_occurance.start()] + var_name[:add_loc] + add_char + var_name[add_loc:] + s[chosen_occurance.end():]
+            break
+        except:
+            continue
 
     return s
 
@@ -148,16 +151,17 @@ def _change_method_return(s):
     if len(methods) == 0:
         return s
 
-    method = random.choice(methods)
+    random.shuffle(methods)
+    for method in methods:
+        if method.return_type:
+            method_declaration = method.return_type.name + " " + method.name
+            new_declaration = "void " + method.name
+        else:
+            method_declaration = "void " + method.name
+            new_declaration = "int " + method.name
 
-    if method.return_type:
-        method_declaration = method.return_type.name + " " + method.name
-        new_declaration = "void " + method.name
-    else:
-        method_declaration = "void " + method.name
-        new_declaration = "int " + method.name
-
-    if s.find(method_declaration) != -1:
-        return s.replace(method_declaration, new_declaration, 1)
+        if s.find(method_declaration) != -1:
+            s = s.replace(method_declaration, new_declaration, 1)
+            break
 
     return s

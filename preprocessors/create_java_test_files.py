@@ -58,6 +58,7 @@ def main(_):
     create_test_file(test_directory, 'variable', test_projects, java_corruptor._misspell_variable)
     print('Create Switch')
     create_test_file(test_directory, 'switch', test_projects, java_corruptor._switch_statement_lines)
+    print ('Method return')
     create_test_file(test_directory, 'method_return', test_projects, java_corruptor._change_method_return)
     print('Create Unperturbed')
     create_test_file(test_directory, 'unperturbed', test_projects, do_nothing, unchanged_allowed=True)

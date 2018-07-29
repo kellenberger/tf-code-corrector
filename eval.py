@@ -3,6 +3,7 @@ import tensorflow as tf
 import numpy as np
 import random
 import os
+import sys
 
 from models.train_model import TrainModel
 from models.evaluation_model import EvaluationModel
@@ -41,6 +42,7 @@ def main(_):
     for file in test_files:
         file_name = os.path.split(file)[1].split('.')[0]
         print("evaluating {}".format(file_name))
+        sys.stdout.flush()
         eval_sess.run(eval_iterator.initializer, feed_dict={eval_file: file})
         with open(os.path.join(FLAGS.output_directory, file_name + '.java'), 'w') as translation_file:
             while(True):
@@ -55,6 +57,32 @@ def main(_):
                         translation_file.write(s + "\n")
                 except tf.errors.OutOfRangeError:
                     break
+
+    target_files = [ os.path.join(FLAGS.data_directory, 'test_files', file)
+                    for file in os.listdir(os.path.join(FLAGS.data_directory, 'test_files'))
+                    if file.endswith('.tgt')]
+    print('evaluating performance')
+    sys.stdout.flush()
+    with open(os.path.join(FLAGS.output_directory, 'performance.txt'), 'w') as performance_file:
+        for file in target_files:
+            line_count = 0
+            correct_count = 0
+            file_name = os.path.split(file)[1].split('.')[0]
+            with open(file, 'r') as target_file, \
+                    open(os.path.join(FLAGS.output_directory, file_name + '.java'), 'r') as translation_file:
+                while True:
+                    target = target_file.readline()
+                    translation = translation_file.readline()
+                    if not target or not translation:
+                        break
+                    line_count += 1
+                    if target == translation:
+                        correct_count += 1
+                result = "{}: {}/{}, {:.2f}%".format(file_name, correct_count, line_count, (correct_count / float(line_count) * 100))
+                print(result)
+                sys.stdout.flush()
+                performance_file.write(result)
+                performance_file.write("\n")
 
 def create_iterator():
     java_file = tf.placeholder(tf.string, shape=[])
