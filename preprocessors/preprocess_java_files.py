@@ -53,7 +53,7 @@ def _write_files_to_new_location(source_file, output_name):
                                 continue
                             methods = _get_methods(content)
                             for method in methods:
-                                if method and java.corruptor.corruptable(method):
+                                if method and java_corruptor.corruptable(method):
                                     output_file.write(method)
                                     output_file.write("\n")
                                     char_count += len(method)
@@ -110,7 +110,8 @@ def _get_methods(text):
             pre_method = text[:method_index][::-1]
             semi = pre_method.find(';')
             bracket = pre_method.find('}')
-            if bracket == -1 or pre_method.find('{') < bracket:
+            opening_bracket = pre_method.find('{')
+            if bracket == -1 or (opening_bracket != -1 and opening_bracket < bracket):
                 bracket = pre_method.find('{')
 
             if semi == -1 and bracket == -1:
