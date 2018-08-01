@@ -5,13 +5,11 @@ from shutil import copyfile
 import re
 import sys
 import javalang
-import random
 from ..corruptors import java_corruptor
 
 tf.app.flags.DEFINE_string("java_directory", "", "Java directory path")
 tf.app.flags.DEFINE_string("split_directory", "", "Split dirctory path")
 tf.app.flags.DEFINE_string("out_directory", "", "Directory to write processed data to")
-tf.app.flags.DEFINE_integer("max_string_length", 1000, "Max length of generated substrings")
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -53,16 +51,17 @@ def _write_files_to_new_location(source_file, output_name):
                             content = re.sub('\s+', ' ', content)
                             if len([char for char in content if ord(char)>127]) > 0:
                                 continue
-                            content = _random_substring(content)
-                            if content:
-                                output_file.write(content)
-                                output_file.write("\n")
-                                char_count += len(content)
-                                if char_count >= 100000000:  # ~ File size 100MB
-                                    file_count += 1
-                                    char_count = 0
-                                    output_file.close()
-                                    output_file = open(os.path.join(FLAGS.out_directory, output_name + str(file_count) + '.java'), 'w')
+                            methods = _get_methods(content)
+                            for method in methods:
+                                if method and java.corruptor.corruptable(method):
+                                    output_file.write(method)
+                                    output_file.write("\n")
+                                    char_count += len(method)
+                                    if char_count >= 100000000:  # ~ File size 100MB
+                                        file_count += 1
+                                        char_count = 0
+                                        output_file.close()
+                                        output_file = open(os.path.join(FLAGS.out_directory, output_name + str(file_count) + '.java'), 'w')
 
 def _remove_comments(text):
     def replacer(match):
@@ -76,22 +75,6 @@ def _remove_comments(text):
         re.DOTALL | re.MULTILINE
     )
     return re.sub(pattern, replacer, text)
-
-def _corruptable(s):
-    try:
-        if s == java_corruptor._switch_statement_lines(s):
-            return False
-        if s == java_corruptor._misspell_variable(s):
-            return False
-        if s == java_corruptor._change_method_return(s):
-            return False
-        if s == java_corruptor._remove_bracket(s):
-            return False
-        if s == java_corruptor._remove_semicolon(s):
-            return False
-    except RuntimeError:
-        return False
-    return True
 
 def _find_closing_bracket(text):
     open_brackets = 0
@@ -127,6 +110,9 @@ def _get_methods(text):
             pre_method = text[:method_index][::-1]
             semi = pre_method.find(';')
             bracket = pre_method.find('}')
+            if bracket == -1 or pre_method.find('{') < bracket:
+                bracket = pre_method.find('{')
+
             if semi == -1 and bracket == -1:
                 continue
             if semi == -1:
@@ -148,16 +134,6 @@ def _get_methods(text):
         return []
 
     return methods
-
-def _random_substring(text):
-    str_length = len(text)
-    if str_length <= 500:
-        return text
-
-    max_length = min(str_length, FLAGS.max_string_length)
-    sub_length = random.randint(500, max_length)
-    start = random.randint(0, str_length - sub_length)
-    return text[start: start + sub_length]
 
 if __name__ == "__main__":
     tf.app.run()
