@@ -11,25 +11,41 @@ def corrupt(s):
     if not random.random() > 0.75:
         return s
 
-    # switch_statement and misspell_variable are not always possible. That's why they get a higher probability
-    if random.random() > 0.5:
-        r = _switch_statement_lines(s)
-        if not s == r:
-            return r
-
+    class_start = "public class A{"
+    class_end = "}"
+    s = class_start + s + class_end
     choice = random.random()
-    if choice > 0.65:
-        r = _misspell_variable(s)
-        if not s == r:
-            return r
-    if choice > 0.5:
-        r = _change_method_return(s)
-        if not s == r:
-            return r
-    if choice > 0.3:
-        return _remove_bracket(s)
+
+    if choice > 0.75:
+        s = _misspell_variable(s)
+    elif choice > 0.5:
+        s = _change_method_return(s)
+    elif choice > 0.25:
+        s = _remove_bracket(s)
     else:
-        return _remove_semicolon(s)
+        s = _remove_semicolon(s)
+
+    return s[len(class_start):len(s) - len(class_end)]
+
+    # # switch_statement and misspell_variable are not always possible. That's why they get a higher probability
+    # if random.random() > 0.5:
+    #     r = _switch_statement_lines(s)
+    #     if not s == r:
+    #         return r
+    #
+    # choice = random.random()
+    # if choice > 0.65:
+    #     r = _misspell_variable(s)
+    #     if not s == r:
+    #         return r
+    # if choice > 0.5:
+    #     r = _change_method_return(s)
+    #     if not s == r:
+    #         return r
+    # if choice > 0.3:
+    #     return _remove_bracket(s)
+    # else:
+    #     return _remove_semicolon(s)
 
 
 def corrupt_simple(s):
@@ -41,6 +57,7 @@ def corrupt_simple(s):
 
 def _remove_bracket(s):
     bracket_indices = [i for i, c in enumerate(s) if c in BRACKETS]
+    bracket_indices = bracket_indices[1:-1]
     if bracket_indices:
         drop_index = random.choice(bracket_indices)
         s = s[:drop_index] + s[drop_index+1:]
@@ -165,3 +182,22 @@ def _change_method_return(s):
             break
 
     return s
+
+def corruptable(s):
+    class_start = "public class A{"
+    class_end = "}"
+    s = class_start + s + class_end
+    try:
+        if s == _switch_statement_lines(s):
+            return False
+        if s == _misspell_variable(s):
+            return False
+        if s == _change_method_return(s):
+            return False
+        if s == _remove_bracket(s):
+            return False
+        if s == _remove_semicolon(s):
+            return False
+    except RuntimeError:
+        return False
+    return True
