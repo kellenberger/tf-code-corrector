@@ -4,11 +4,14 @@ import tensorflow as tf
 from shutil import copyfile
 import re
 import sys
+import javalang
+import random
 from ..corruptors import java_corruptor
 
 tf.app.flags.DEFINE_string("java_directory", "", "Java directory path")
 tf.app.flags.DEFINE_string("split_directory", "", "Split dirctory path")
 tf.app.flags.DEFINE_string("out_directory", "", "Directory to write processed data to")
+tf.app.flags.DEFINE_integer("max_string_length", 1000, "Max length of generated substrings")
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -48,8 +51,9 @@ def _write_files_to_new_location(source_file, output_name):
                             content = file_data.read()
                             content = _remove_comments(content).strip()
                             content = re.sub('\s+', ' ', content)
-                            if len([char for char in content if ord(char)>127]) > 0 or not _corruptable(content):
+                            if len([char for char in content if ord(char)>127]) > 0:
                                 continue
+                            content = _random_substring(content)
                             if content:
                                 output_file.write(content)
                                 output_file.write("\n")
@@ -88,6 +92,72 @@ def _corruptable(s):
     except RuntimeError:
         return False
     return True
+
+def _find_closing_bracket(text):
+    open_brackets = 0
+    for i in range(len(text)):
+        char = text[i]
+        if char == '{':
+            open_brackets += 1
+        elif char == '}':
+            open_brackets -= 1
+            if open_brackets == 0:
+                return i
+    return -1
+
+def _get_methods(text):
+    try:
+        tree = javalang.parse.parse(text)
+    except:
+        return []
+
+    methods = []
+    try:
+        for _, node in tree.filter(javalang.tree.MethodDeclaration):
+            if node.return_type:
+                method_name = node.return_type.name
+            else:
+                method_name = "void"
+            method_name += " " + node.name
+
+            method_index = text.find(method_name)
+            if method_index == -1:
+                continue
+
+            pre_method = text[:method_index][::-1]
+            semi = pre_method.find(';')
+            bracket = pre_method.find('}')
+            if semi == -1 and bracket == -1:
+                continue
+            if semi == -1:
+                start_index = bracket
+            elif bracket == -1:
+                start_index = semi
+            else:
+                start_index = min(semi, bracket)
+
+            start_index = method_index - (start_index - 1)
+
+            open_end_method = text[start_index:]
+            end_index = _find_closing_bracket(open_end_method)
+            if end_index == -1:
+                continue
+
+            methods.append(open_end_method[:end_index + 1])
+    except RuntimeError:
+        return []
+
+    return methods
+
+def _random_substring(text):
+    str_length = len(text)
+    if str_length <= 500:
+        return text
+
+    max_length = min(str_length, FLAGS.max_string_length)
+    sub_length = random.randint(500, max_length)
+    start = random.randint(0, str_length - sub_length)
+    return text[start: start + sub_length]
 
 if __name__ == "__main__":
     tf.app.run()
