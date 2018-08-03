@@ -10,6 +10,7 @@ from ..corruptors import java_corruptor
 tf.app.flags.DEFINE_string("java_directory", "", "Java directory path")
 tf.app.flags.DEFINE_string("split_directory", "", "Split dirctory path")
 tf.app.flags.DEFINE_string("out_directory", "", "Directory to write processed data to")
+tf.app.flags.DEFINE_integer("eol_id", 4, "end-of-line id")
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -19,9 +20,12 @@ def main(_):
     assert FLAGS.split_directory
     assert FLAGS.out_directory
 
+    java_corruptor.EOL_ID = FLAGS.eol_id
+
     with open(os.path.join(FLAGS.out_directory, 'eval.java'), 'w') as eval_file:
         for i in range(256):
-            eval_file.write("public class A { public int getOne(){ return 1; } }\n")
+            eol = chr(FLAGS.eol_id)
+            eval_file.write('public int increment(int number) {' + eol + 'return number+1;' + eol + '}\n')
 
     _write_files_to_new_location('trainJava.csv', 'train_')
     _write_files_to_new_location('testJava.csv', 'test_')
@@ -48,11 +52,14 @@ def _write_files_to_new_location(source_file, output_name):
                         with open(os.path.join(subdir, file), 'r') as file_data:
                             content = file_data.read()
                             content = _remove_comments(content).strip()
-                            content = re.sub('\s+', ' ', content)
                             if len([char for char in content if ord(char)>127]) > 0:
                                 continue
                             methods = _get_methods(content)
                             for method in methods:
+                                method = method.strip()
+                                eol = chr(FLAGS.eol_id)
+                                method = re.sub('\s*\n+\s*',eol,method)
+                                method = re.sub('\s+', ' ', method)
                                 if method and java_corruptor.corruptable(method):
                                     output_file.write(method)
                                     output_file.write("\n")

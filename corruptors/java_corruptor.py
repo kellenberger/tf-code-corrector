@@ -6,14 +6,16 @@ import javalang
 import re
 
 BRACKETS = ['(', ')', '[', ']', '{', '}']
+EOL_ID = 4
+CORRUPT_ALL = False
+CLASS_START = "public class A {\n"
+CLASS_END = "\n}"
 
 def corrupt(s):
-    if not random.random() > 0.75:
+    if not CORRUPT_ALL and not random.random() > 0.75:
         return s
 
-    class_start = "public class A{"
-    class_end = "}"
-    s = class_start + s + class_end
+    s = _prepare(s)
     choice = random.random()
 
     if choice > 0.75:
@@ -25,7 +27,7 @@ def corrupt(s):
     else:
         s = _remove_semicolon(s)
 
-    return s[len(class_start):len(s) - len(class_end)]
+    return _unprepare(s)
 
     # # switch_statement and misspell_variable are not always possible. That's why they get a higher probability
     # if random.random() > 0.5:
@@ -48,12 +50,14 @@ def corrupt(s):
     #     return _remove_semicolon(s)
 
 
-def corrupt_simple(s):
-    if random.random() > 0.5:
-        return _remove_bracket(s)
-    else:
-        return _remove_semicolon(s)
+def _prepare(s):
+    s = re.sub(chr(EOL_ID), "\n", s)
+    return CLASS_START + s + CLASS_END
 
+def _unprepare(s):
+    s = s[len(CLASS_START):len(s) - len(CLASS_END)]
+    s = s.strip()
+    return re.sub("\n+", chr(EOL_ID), s)
 
 def _remove_bracket(s):
     bracket_indices = [i for i, c in enumerate(s) if c in BRACKETS]
@@ -95,22 +99,27 @@ def _misspell_variable(s):
         if len(occurances) <= 1:
             continue
 
-        chosen_occurance = random.choice(occurances[1:])
-        r = random.random()
-        try:
-            if r >= 0.66 and len(var_name) > 1:
-                drop_char = random.randint(0, len(var_name) - 1)
-                s = s[:chosen_occurance.start()] + var_name[:drop_char] + var_name[drop_char+1:] + s[chosen_occurance.end():]
-            elif r >= 0.33 and len(var_name) > 1:
-                change_char = random.randint(0, len(var_name) - 2)
-                s = s[:chosen_occurance.start()] + var_name[:change_char] + var_name[change_char+1] + var_name[change_char] + var_name[change_char+2:] + s[chosen_occurance.end():]
-            else:
-                add_char = random.choice(string.lowercase)
-                add_loc = random.randint(0, len(var_name) - 1)
-                s = s[:chosen_occurance.start()] + var_name[:add_loc] + add_char + var_name[add_loc:] + s[chosen_occurance.end():]
+        changed = False
+        for chosen_occurance in occurances[1:]:
+            r = random.random()
+            try:
+                if r >= 0.66 and len(var_name) > 1:
+                    drop_char = random.randint(0, len(var_name) - 1)
+                    s = s[:chosen_occurance.start()] + var_name[:drop_char] + var_name[drop_char+1:] + s[chosen_occurance.end():]
+                elif r >= 0.33 and len(var_name) > 1:
+                    change_char = random.randint(0, len(var_name) - 2)
+                    s = s[:chosen_occurance.start()] + var_name[:change_char] + var_name[change_char+1] + var_name[change_char] + var_name[change_char+2:] + s[chosen_occurance.end():]
+                else:
+                    add_char = random.choice(string.lowercase)
+                    add_loc = random.randint(0, len(var_name) - 1)
+                    s = s[:chosen_occurance.start()] + var_name[:add_loc] + add_char + var_name[add_loc:] + s[chosen_occurance.end():]
+                changed = True
+                break
+            except:
+                continue
+
+        if changed:
             break
-        except:
-            continue
 
     return s
 
@@ -121,31 +130,29 @@ def _switch_statement_lines(s):
         return s
     statements = []
     for _, node in tree.filter(javalang.tree.LocalVariableDeclaration):
-        start = node.position[1]
-        end = s[start:].find(';') + start + 1
-        statements.append({'class': type(node), 'start': start, 'end': end})
+        line = node.position[0] - 1
+        statements.append({'class': type(node), 'line': line})
 
     for _, node in tree.filter(javalang.tree.StatementExpression):
         node = node.children[1]
         if not isinstance(node, javalang.tree.Assignment) and not isinstance(node, javalang.tree.MethodInvocation):
             continue
         if hasattr(node, 'position') and node.position:
-            start = node.position[1]
+            line = node.position[0] - 1
         elif hasattr(node.children[0], 'position') and node.children[0].position:
-            start = node.children[0].position[1]
+            line = node.children[0].position[0] - 1
         else:
             continue
-        end = s[start:].find(';') + start + 1
-        statements.append({'class': type(node), 'start': start, 'end': end})
+        statements.append({'class': type(node), 'line': line})
 
     if len(statements) <= 1:
         return s
 
-    statements = sorted(statements, key=lambda x: x['start'])
+    statements = sorted(statements, key=lambda x: x['line'])
     possible_statements = []
     previous_statement = statements[0]
     for statement in statements[1:]:
-        if previous_statement['end'] + 1 == statement['start'] and previous_statement['class'] != statement['class']:
+        if previous_statement['line'] + 1 == statement['line'] and previous_statement['class'] != statement['class']:
             possible_statements.append((previous_statement, statement))
         previous_statement = statement
 
@@ -153,7 +160,8 @@ def _switch_statement_lines(s):
         return s
 
     first, second = random.choice(possible_statements)
-    return s[:first['start']] + s[second['start']:second['end']] + s[first['start']:first['end']] + s[second['end']:]
+    splits = s.split('\n')
+    return "\n".join(splits[:first['line']] + [splits[second['line']]] + [splits[first['line']]] + splits[second['line']+1:])
 
 def _change_method_return(s):
     try:
@@ -184,9 +192,7 @@ def _change_method_return(s):
     return s
 
 def corruptable(s):
-    class_start = "public class A{"
-    class_end = "}"
-    s = class_start + s + class_end
+    s = _prepare(s)
     try:
         if s == _switch_statement_lines(s):
             return False
