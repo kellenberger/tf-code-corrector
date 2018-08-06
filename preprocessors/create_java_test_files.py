@@ -7,7 +7,7 @@ import glob
 from ..corruptors import java_corruptor
 
 tf.app.flags.DEFINE_string("java_directory", "", "Java directory path")
-tf.app.flags.DEFINE_integer("max_sequence_length", 1000, "Maximal length for "
+tf.app.flags.DEFINE_integer("max_sequence_length", 300, "Maximal length for "
                                                     "considered sequences")
 tf.app.flags.DEFINE_integer("lines_per_file", 8192, "Lines in each test file")
 
@@ -44,11 +44,9 @@ def create_corrupted_file(dir, file_name, uncorrupted_file, corruption_fn):
         for line in uncorrupted_data:
             tgt_line = line.strip()
 
-            class_start = "public class A{"
-            class_end = "}"
-            s = class_start + tgt_line + class_end
+            s = java_corruptor._prepare(tgt_line)
             s = corruption_fn(s)
-            src_line = s[len(class_start):len(s) - len(class_end)]
+            src_line = java_corruptor._unprepare(s)
             if tgt_line == src_line:
                 print 'unable to corrupt'
             source_file.write(src_line + "\n")

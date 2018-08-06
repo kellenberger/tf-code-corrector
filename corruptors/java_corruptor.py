@@ -6,6 +6,7 @@ import javalang
 import re
 
 BRACKETS = ['(', ')', '[', ']', '{', '}']
+PRIMITIVE_DATA_TYPES = ['int', 'float', 'double', 'String', 'boolean']
 EOL_ID = 4
 CORRUPT_ALL = False
 CLASS_START = "public class A {\n"
@@ -18,11 +19,13 @@ def corrupt(s):
     s = _prepare(s)
     choice = random.random()
 
-    if choice > 0.75:
+    if choice > 0.8:
+        s = _switch_statement_lines(s)
+    elif choice > 0.6:
         s = _misspell_variable(s)
-    elif choice > 0.5:
+    elif choice > 0.4:
         s = _change_method_return(s)
-    elif choice > 0.25:
+    elif choice > 0.2:
         s = _remove_bracket(s)
     else:
         s = _remove_semicolon(s)
@@ -183,7 +186,7 @@ def _change_method_return(s):
             new_declaration = "void " + method.name
         else:
             method_declaration = "void " + method.name
-            new_declaration = "int " + method.name
+            new_declaration = random.choice(PRIMITIVE_DATA_TYPES) + " " + method.name
 
         if s.find(method_declaration) != -1:
             s = s.replace(method_declaration, new_declaration, 1)

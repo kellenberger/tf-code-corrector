@@ -10,6 +10,7 @@ from models.evaluation_model import EvaluationModel
 
 tf.app.flags.DEFINE_string("data_directory", "", "Directory of the data set")
 tf.app.flags.DEFINE_string("output_directory", "", "Output directory for checkpoints and tests")
+tf.app.flags.DEFINE_string("checkpoint", "", "Checkpoint to evaluate. If none is given, the latest one is chosen.")
 tf.app.flags.DEFINE_integer("pad_id", 1, "Code of padding character")
 tf.app.flags.DEFINE_integer("sos_id", 2, "Code of start-of-sequence character")
 tf.app.flags.DEFINE_integer("eos_id", 3, "Code of end-of-sequence character")
@@ -37,7 +38,13 @@ def main(_):
 
     eval_sess = tf.Session(graph=eval_graph)
 
-    eval_model.saver.restore(eval_sess, tf.train.latest_checkpoint(FLAGS.output_directory))
+    if FLAGS.checkpoint:
+        print("load from checkpoint {}".format(FLAGS.checkpoint))
+        restore_path = FLAGS.checkpoint
+    else:
+        print("load from latest checkpoint")
+        restore_path = tf.train.latest_checkpoint(FLAGS.output_directory)
+    eval_model.saver.restore(eval_sess, restore_path)
 
     for file in test_files:
         file_name = os.path.split(file)[1].split('.')[0]
