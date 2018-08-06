@@ -44,16 +44,18 @@ class EvaluationModel:
             layers_to_go -= layers
         decoder_cell = tf.nn.rnn_cell.MultiRNNCell(decoder_layers)
 
-        # Create an attention mechanism
-        attention_mechanism = tf.contrib.seq2seq.LuongAttention(
-            FLAGS.num_units, encoder_outputs,
-            scale=True)
-        decoder_cell = tf.contrib.seq2seq.AttentionWrapper(
-            decoder_cell, attention_mechanism,
-            attention_layer_size=FLAGS.num_units)
+        if FLAGS.use_attention:
+            attention_mechanism = tf.contrib.seq2seq.LuongAttention(
+                FLAGS.num_units, encoder_outputs,
+                scale=True)
+            decoder_cell = tf.contrib.seq2seq.AttentionWrapper(
+                decoder_cell, attention_mechanism,
+                attention_layer_size=FLAGS.num_units)
 
-        decoder_initial_state = decoder_cell.zero_state(batch_size, dtype=tf.float32).clone(
-          cell_state=encoder_state)
+            decoder_initial_state = decoder_cell.zero_state(batch_size, dtype=tf.float32).clone(
+              cell_state=encoder_state)
+        else:
+            decoder_initial_state = encoder_state
 
         # Helper
         def sample_fn(output):
@@ -88,7 +90,7 @@ class EvaluationModel:
         self.encoder_input = encoder_input
         self.target_output = target_output
 
-        self.saver = tf.train.Saver()
+        self.saver = tf.train.Saver(max_to_keep=10)
 
     def eval(self, session, silent=False):
         translations, target, input = session.run([self.translations, self.target_output, self.encoder_input])

@@ -30,7 +30,8 @@ tf.app.flags.DEFINE_integer("random_seed", 1234, "Seed for all random operations
 tf.app.flags.DEFINE_integer("num_gpus", 1, "number of GPUs to use")
 tf.app.flags.DEFINE_float("max_gradient_norm", 5.0, "Clip gradients to this norm")
 tf.app.flags.DEFINE_float("learning_rate", 0.001, "Learning rate for the optimizer")
-tf.app.flags.DEFINE_boolean("corrupt_all", True, "Wheter to corrupt all data or just some percentage")
+tf.app.flags.DEFINE_boolean("corrupt_all", False, "Wheter to corrupt all data or just some percentage")
+tf.app.flags.DEFINE_boolean("use_attention", True, "Wheter to use an attention mechansim")
 
 FLAGS = tf.app.flags.FLAGS
 

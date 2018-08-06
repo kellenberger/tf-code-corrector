@@ -58,16 +58,18 @@ class TrainModel:
             layers_to_go -= layers
         decoder_cell = tf.nn.rnn_cell.MultiRNNCell(decoder_layers)
 
-        # Create an attention mechanism
-        attention_mechanism = tf.contrib.seq2seq.LuongAttention(
-            FLAGS.num_units, encoder_outputs,
-            scale=True)
-        decoder_cell = tf.contrib.seq2seq.AttentionWrapper(
-            decoder_cell, attention_mechanism,
-            attention_layer_size=FLAGS.num_units)
+        if FLAGS.use_attention:
+            attention_mechanism = tf.contrib.seq2seq.LuongAttention(
+                FLAGS.num_units, encoder_outputs,
+                scale=True)
+            decoder_cell = tf.contrib.seq2seq.AttentionWrapper(
+                decoder_cell, attention_mechanism,
+                attention_layer_size=FLAGS.num_units)
 
-        decoder_initial_state = decoder_cell.zero_state(batch_size, dtype=tf.float32).clone(
-          cell_state=encoder_state)
+            decoder_initial_state = decoder_cell.zero_state(batch_size, dtype=tf.float32).clone(
+              cell_state=encoder_state)
+        else:
+            decoder_initial_state = encoder_state
 
         helper = tf.contrib.seq2seq.TrainingHelper(decoder_input, target_lengths)
         decoder = tf.contrib.seq2seq.BasicDecoder(
@@ -92,7 +94,7 @@ class TrainModel:
 
         self.train_loss = train_loss
 
-        self.saver = tf.train.Saver()
+        self.saver = tf.train.Saver(max_to_keep=10)
         self.start_time = None
 
     def train(self, session, i):
