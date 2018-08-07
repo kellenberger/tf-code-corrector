@@ -13,7 +13,9 @@ class EvaluationModel:
         encoder_input, sequence_lengths, decoder_input, target_output, target_lengths = iterator.get_next()
         sequence_lengths = tf.reshape(sequence_lengths, [batch_size])
         target_lengths = tf.reshape(target_lengths, [batch_size])
-        encoder_input = tf.reverse(encoder_input, [1])
+
+        if FLAGS.reverse_input:
+            encoder_input = tf.reverse(encoder_input, [1])
 
         encoder_input = tf.reshape(encoder_input, [batch_size, -1, 1])
         encoder_input = tf.cast(encoder_input, tf.float32)
@@ -33,6 +35,7 @@ class EvaluationModel:
 
         encoder_outputs, encoder_state = tf.nn.dynamic_rnn(cell = encoder_cell,
                                                             inputs = encoder_input,
+                                                            sequence_length = None if FLAGS.reverse_input else sequence_lengths,
                                                             dtype = tf.float32)
 
         decoder_layers = []
@@ -47,6 +50,7 @@ class EvaluationModel:
         if FLAGS.use_attention:
             attention_mechanism = tf.contrib.seq2seq.LuongAttention(
                 FLAGS.num_units, encoder_outputs,
+                memory_sequence_length = None if FLAGS.reverse_input else sequence_lengths,
                 scale=True)
             decoder_cell = tf.contrib.seq2seq.AttentionWrapper(
                 decoder_cell, attention_mechanism,
@@ -90,14 +94,17 @@ class EvaluationModel:
         self.encoder_input = encoder_input
         self.target_output = target_output
 
+        self.reverse_input = FLAGS.reverse_input
+
         self.saver = tf.train.Saver(max_to_keep=10)
 
     def eval(self, session, silent=False):
         translations, target, input = session.run([self.translations, self.target_output, self.encoder_input])
         if not silent:
             s = ''
-            for c in reversed(input[0]):
-                if c == 128:
+            inp = reversed(input[0]) if self.reverse_input else input[0]
+            for c in inp:
+                if c == 1:
                     continue
                 s+= chr(c)
             print("Source: {}".format(s))

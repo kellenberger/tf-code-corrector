@@ -14,7 +14,9 @@ class TrainModel:
         encoder_input, sequence_lengths, decoder_input, target_output, target_lengths = iterator.get_next()
         sequence_lengths = tf.reshape(sequence_lengths, [batch_size])
         target_lengths = tf.reshape(target_lengths, [batch_size])
-        encoder_input = tf.reverse(encoder_input, [1])
+
+        if FLAGS.reverse_input:
+            encoder_input = tf.reverse(encoder_input, [1])
 
         encoder_input = tf.reshape(encoder_input, [batch_size, -1, 1])
         decoder_input = tf.reshape(decoder_input, [batch_size, -1, 1])
@@ -47,6 +49,7 @@ class TrainModel:
 
         encoder_outputs, encoder_state = tf.nn.dynamic_rnn(cell = encoder_cell,
                                                             inputs = encoder_input,
+                                                            sequence_length = None if FLAGS.reverse_input else sequence_lengths,
                                                             dtype = tf.float32)
 
         decoder_layers = []
@@ -61,6 +64,7 @@ class TrainModel:
         if FLAGS.use_attention:
             attention_mechanism = tf.contrib.seq2seq.LuongAttention(
                 FLAGS.num_units, encoder_outputs,
+                memory_sequence_length = None if FLAGS.reverse_input else sequence_lengths,
                 scale=True)
             decoder_cell = tf.contrib.seq2seq.AttentionWrapper(
                 decoder_cell, attention_mechanism,
