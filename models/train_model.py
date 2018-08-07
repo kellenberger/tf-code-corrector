@@ -2,7 +2,6 @@
 import tensorflow as tf
 import time
 import sys
-import math
 
 from batch_generators.java_batch_generator import JavaBatchGenerator
 
@@ -36,15 +35,7 @@ class TrainModel:
 
         projection_layer = tf.layers.Dense(128, use_bias = False) # 128 characters can with represented in ASCII
 
-        layers_per_gpu = int(math.ceil(FLAGS.num_layers / float(FLAGS.num_gpus)))
-
-        encoder_layers = []
-        layers_to_go = FLAGS.num_layers
-        for i in range(FLAGS.num_gpus):
-            layers = min(layers_per_gpu, layers_to_go)
-            for j in range(layers):
-                encoder_layers.append(tf.contrib.rnn.DeviceWrapper(tf.nn.rnn_cell.LSTMCell(FLAGS.num_units), "/gpu:%d" % i))
-            layers_to_go -= layers
+        encoder_layers = [tf.nn.rnn_cell.LSTMCell(FLAGS.num_units) for i in range(FLAGS.num_layers)]
         encoder_cell = tf.nn.rnn_cell.MultiRNNCell(encoder_layers)
 
         encoder_outputs, encoder_state = tf.nn.dynamic_rnn(cell = encoder_cell,
@@ -52,13 +43,7 @@ class TrainModel:
                                                             sequence_length = None if FLAGS.reverse_input else sequence_lengths,
                                                             dtype = tf.float32)
 
-        decoder_layers = []
-        layers_to_go = FLAGS.num_layers
-        for i in range(FLAGS.num_gpus):
-            layers = min(layers_per_gpu, layers_to_go)
-            for j in range(layers):
-                decoder_layers.append(tf.contrib.rnn.DeviceWrapper(tf.nn.rnn_cell.LSTMCell(FLAGS.num_units), "/gpu:%d" % i))
-            layers_to_go -= layers
+        decoder_layers = [tf.nn.rnn_cell.LSTMCell(FLAGS.num_units) for i in range(FLAGS.num_layers)]
         decoder_cell = tf.nn.rnn_cell.MultiRNNCell(decoder_layers)
 
         if FLAGS.use_attention:
