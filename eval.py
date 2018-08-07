@@ -21,6 +21,7 @@ tf.app.flags.DEFINE_integer("num_iterations", 12000, "Number of iterations in tr
 tf.app.flags.DEFINE_integer("num_gpus", 1, "number of GPUs to use")
 tf.app.flags.DEFINE_float("max_gradient_norm", 5.0, "Clip gradients to this norm")
 tf.app.flags.DEFINE_float("learning_rate", 0.001, "Learning rate for the optimizer")
+tf.app.flags.DEFINE_boolean("use_attention", True, "Wheter to use an attention mechansim")
 
 FLAGS = tf.app.flags.FLAGS
 
