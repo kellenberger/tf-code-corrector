@@ -29,9 +29,10 @@ tf.app.flags.DEFINE_integer("eval_steps", 1000, "Step size for evaluation")
 tf.app.flags.DEFINE_integer("random_seed", 1234, "Seed for all random operations")
 tf.app.flags.DEFINE_float("max_gradient_norm", 5.0, "Clip gradients to this norm")
 tf.app.flags.DEFINE_float("learning_rate", 0.001, "Learning rate for the optimizer")
-tf.app.flags.DEFINE_boolean("corrupt_all", False, "Wheter to corrupt all data or just some percentage")
+tf.app.flags.DEFINE_float("corrupt_percentage", 0.25, "What percentage of data to corrupt")
 tf.app.flags.DEFINE_boolean("use_attention", True, "Wheter to use an attention mechansim")
-tf.app.flags.DEFINE_boolean("reverse_input", True, "Wheter to reverse the input sequence")
+tf.app.flags.DEFINE_boolean("reverse_input", False, "Wheter to reverse the input sequence")
+tf.app.flags.DEFINE_string("cell_type", "lstm", "Cell type for the encoder and decoder")
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -46,7 +47,7 @@ def main(_):
         json.dump(FLAGS.flag_values_dict(), hparam)
 
     java_corruptor.EOL_ID = FLAGS.eol_id
-    java_corruptor.CORRUPT_ALL = FLAGS.corrupt_all
+    java_corruptor.CORRUPT_PERCENTAGE = FLAGS.corrupt_percentage
 
     random.seed(FLAGS.random_seed)
 

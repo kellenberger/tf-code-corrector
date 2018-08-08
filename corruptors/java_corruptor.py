@@ -8,12 +8,12 @@ import re
 BRACKETS = ['(', ')', '[', ']', '{', '}']
 PRIMITIVE_DATA_TYPES = ['int', 'float', 'double', 'String', 'boolean']
 EOL_ID = 4
-CORRUPT_ALL = False
+CORRUPT_PERCENTAGE = 0.25
 CLASS_START = "public class A {\n"
 CLASS_END = "\n}"
 
 def corrupt(s):
-    if not CORRUPT_ALL and not random.random() > 0.75:
+    if random.random() > CORRUPT_PERCENTAGE:
         return s
 
     s = _prepare(s)

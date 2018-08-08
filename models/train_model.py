@@ -35,7 +35,15 @@ class TrainModel:
 
         projection_layer = tf.layers.Dense(128, use_bias = False) # 128 characters can with represented in ASCII
 
-        encoder_layers = [tf.nn.rnn_cell.LSTMCell(FLAGS.num_units) for i in range(FLAGS.num_layers)]
+        if FLAGS.cell_type == "lstm":
+            encoder_layers = [tf.nn.rnn_cell.LSTMCell(FLAGS.num_units) for i in range(FLAGS.num_layers)]
+        elif FLAGS.cell_type == "gru":
+            encoder_layers = [tf.nn.rnn_cell.GRUCell(FLAGS.num_units) for i in range(FLAGS.num_layers)]
+        elif FLAGS.cell_type == "rnn":
+            encoder_layers = [tf.nn.rnn_cell.BasicRNNCell(FLAGS.num_units) for i in range(FLAGS.num_layers)]
+        else:
+            raise ValueError("Unknown cell type %s!" % FLAGS.cell_type)
+
         encoder_cell = tf.nn.rnn_cell.MultiRNNCell(encoder_layers)
 
         encoder_outputs, encoder_state = tf.nn.dynamic_rnn(cell = encoder_cell,
@@ -43,7 +51,14 @@ class TrainModel:
                                                             sequence_length = None if FLAGS.reverse_input else sequence_lengths,
                                                             dtype = tf.float32)
 
-        decoder_layers = [tf.nn.rnn_cell.LSTMCell(FLAGS.num_units) for i in range(FLAGS.num_layers)]
+        if FLAGS.cell_type == "lstm":
+            decoder_layers = [tf.nn.rnn_cell.LSTMCell(FLAGS.num_units) for i in range(FLAGS.num_layers)]
+        elif FLAGS.cell_type == "gru":
+            decoder_layers = [tf.nn.rnn_cell.GRUCell(FLAGS.num_units) for i in range(FLAGS.num_layers)]
+        elif FLAGS.cell_type == "rnn":
+            decoder_layers = [tf.nn.rnn_cell.BasicRNNCell(FLAGS.num_units) for i in range(FLAGS.num_layers)]
+        else:
+            raise ValueError("Unknown cell type %s!" % FLAGS.cell_type)
         decoder_cell = tf.nn.rnn_cell.MultiRNNCell(decoder_layers)
 
         if FLAGS.use_attention:

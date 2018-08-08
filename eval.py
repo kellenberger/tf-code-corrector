@@ -21,7 +21,8 @@ tf.app.flags.DEFINE_integer("num_iterations", 12000, "Number of iterations in tr
 tf.app.flags.DEFINE_float("max_gradient_norm", 5.0, "Clip gradients to this norm")
 tf.app.flags.DEFINE_float("learning_rate", 0.001, "Learning rate for the optimizer")
 tf.app.flags.DEFINE_boolean("use_attention", True, "Wheter to use an attention mechansim")
-tf.app.flags.DEFINE_boolean("reverse_input", True, "Wheter to reverse the input sequence")
+tf.app.flags.DEFINE_boolean("reverse_input", False, "Wheter to reverse the input sequence")
+tf.app.flags.DEFINE_string("cell_type", "lstm", "Cell type for the encoder and decoder")
 
 FLAGS = tf.app.flags.FLAGS
 
