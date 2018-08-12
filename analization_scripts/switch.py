@@ -4,7 +4,7 @@ import re
 import javalang
 from collections import Counter
 
-tf.app.flags.DEFINE_string("eval_file", "", "Evaluation file of the return type corruption")
+tf.app.flags.DEFINE_string("eval_file", "", "Evaluation file of the line switch corruption")
 tf.app.flags.DEFINE_string("test_files_dir", "", "Directory of test files")
 tf.app.flags.DEFINE_integer("eol_id", 4, "end-of-line id")
 

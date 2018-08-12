@@ -3,7 +3,7 @@ import tensorflow as tf
 import re
 from collections import Counter
 
-tf.app.flags.DEFINE_string("eval_file", "", "Evaluation file of the return type corruption")
+tf.app.flags.DEFINE_string("eval_file", "", "Evaluation file of the variable corruption")
 tf.app.flags.DEFINE_string("test_files_dir", "", "Directory of test files")
 
 FLAGS = tf.app.flags.FLAGS
