@@ -42,7 +42,14 @@ def main(_):
                 if tgt_line != eval_lines[i]:
                     if i < len(eval_lines) - 1:
                         new_eval = eval_lines[:i] + [eval_lines[i+1]] + [eval_lines[i]] + eval_lines[i+2:]
-                        if tgt == chr(FLAGS.eol_id).join(new_eval):
+                        new_eval = chr(FLAGS.eol_id).join(new_eval)
+                        incorrect = False
+                        for i, c in enumerate(tgt):
+                            if c != new_eval[i] and ord(c) != ord(new_eval[i])-1 and ord(c) != ord(new_eval[i])+1:
+                                incorrect = True
+                                break
+
+                        if not incorrect:
                             wrong_switch += 1
                     break
 
