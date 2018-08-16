@@ -47,8 +47,6 @@ def create_corrupted_file(dir, file_name, uncorrupted_file, corruption_fn):
             s = java_corruptor._prepare(tgt_line)
             s = corruption_fn(s)
             src_line = java_corruptor._unprepare(s)
-            if tgt_line == src_line:
-                print 'unable to corrupt'
             source_file.write(src_line + "\n")
             target_file.write(tgt_line + "\n")
 
